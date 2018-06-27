@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "osu.Framework.Markdown", "osu.Framework.Markdown\osu.Framework.Markdown.csproj", "{7020F8FD-07F6-40F8-A5E5-62AEF4E4DEF7}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "osu.Framework", "osu-framework\osu.Framework\osu.Framework.csproj", "{C638FADC-9E99-4CDC-B099-BB56B491191D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "osu.Framework.Markdown.Tests", "osu.Framework.Markdown.Tests\osu.Framework.Markdown.Tests.csproj", "{AC80A64D-AE40-4448-9A07-81161B1E691E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{7020F8FD-07F6-40F8-A5E5-62AEF4E4DEF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7020F8FD-07F6-40F8-A5E5-62AEF4E4DEF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7020F8FD-07F6-40F8-A5E5-62AEF4E4DEF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C638FADC-9E99-4CDC-B099-BB56B491191D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C638FADC-9E99-4CDC-B099-BB56B491191D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C638FADC-9E99-4CDC-B099-BB56B491191D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C638FADC-9E99-4CDC-B099-BB56B491191D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC80A64D-AE40-4448-9A07-81161B1E691E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC80A64D-AE40-4448-9A07-81161B1E691E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC80A64D-AE40-4448-9A07-81161B1E691E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC80A64D-AE40-4448-9A07-81161B1E691E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
