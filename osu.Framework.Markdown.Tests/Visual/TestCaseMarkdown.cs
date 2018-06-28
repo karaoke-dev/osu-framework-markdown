@@ -7,9 +7,15 @@ using System.Text;
 using Markdig;
 using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Syntax;
+using Microsoft.CodeAnalysis.Text;
+using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Sprites;
+using osu.Framework.Markdown.Graphics.Containers;
 using osu.Framework.Testing;
+using osu.Framework.Graphics.Shapes;
+using osu.Framework.Markdown.Graphics.Containers.Component;
+using Markdig.Syntax.Inlines;
 
 namespace osu.Framework.Markdown.Tests.Visual
 {
@@ -61,48 +67,21 @@ namespace osu.Framework.Markdown.Tests.Visual
             var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub).Build();
             var doc = Markdig.Markdown.Parse(markdown, pipeline);
 
-            var headings = doc.Descendants<HeadingBlock>().ToList();
+            //var headings = doc.Descendants<HeadingBlock>().Take(20).ToList();
+            //var headings = doc.Descendants<ParagraphBlock>().Take(20).ToList();
+            var headings = doc.Descendants<QuoteBlock>().Take(20).ToList();
 
-            var container = new MarkdownContainer();
+            var container = new MarkdownContainer()
+            {
+                AutoSizeAxes = Axes.Both,
+            };
 
             foreach (var head in headings)
             {
-                container.Add(new MarkdownHeading(head));
+                container.Add(new MarkdownQuoteBlock(head));
             }
 
             Add(container);
-        }
-    }
-
-    public class MarkdownContainer : FillFlowContainer
-    {
-        public MarkdownContainer()
-        {
-            Direction = FillDirection.Vertical;
-        }
-    }
-
-    public class MarkdownHeading : SpriteText
-    {
-        public MarkdownHeading()
-        {
-
-        }
-
-        public MarkdownHeading(HeadingBlock headingBlock)
-        {
-            Style = headingBlock;
-        }
-
-        private HeadingBlock _headingBlock;
-        public virtual HeadingBlock Style
-        {
-            get => _headingBlock;
-            set
-            {
-                _headingBlock = value;
-                Text = _headingBlock.Inline.FirstChild.ToString();
-            }
         }
     }
 }

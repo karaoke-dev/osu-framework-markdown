@@ -7,6 +7,10 @@ namespace osu.Framework.Markdown.Graphics.Containers
 {
     public class MarkdownContainer : FillFlowContainer
     {
-
+        public MarkdownContainer()
+        {
+            Direction = FillDirection.Vertical;
+            Spacing = new OpenTK.Vector2(20, 20);
+        }
     }
 }
