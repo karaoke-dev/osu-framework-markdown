@@ -105,11 +105,6 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             _markdownContainer.ImportMarkdownDocument(document);
         }
-
-        public void AddMarkdownComponent(IMarkdownObject markdownObject)
-        {
-            _markdownContainer.AddMarkdownComponent(markdownObject);
-        }
     }
 
     /// <summary>
@@ -121,6 +116,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             Direction = FillDirection.Vertical;
             Spacing = new OpenTK.Vector2(20, 20);
+            Margin = new MarginPadding(){Left = 20,Right = 20};
         }
 
         public void ImportMarkdownDocument(MarkdownDocument document)
@@ -160,7 +156,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         public NotExistMarkdown(IMarkdownObject markdownObject)
         {
-            Style = _markdownObject;
+            Style = markdownObject;
             this.Colour = new Color4(255,0,0,255);
             this.TextSize = 21;
         }
@@ -172,9 +168,22 @@ namespace osu.Framework.Markdown.Tests.Visual
             set
             {
                 _markdownObject = value;
-                this.Text = "Does not found : " + _markdownObject?.GetType()?.Name;
+                this.Text = "Does not found : " + _markdownObject?.GetType()?.Name + " ,Name : "+ _markdownObject?.ToString();
             }
         }
+    }
+
+    /// <summary>
+    /// NotExistMarkdown : 
+    /// - [1. Blocks](#1-blocks)
+    ///     - [1.1 Code block](#11-code-block)
+    ///     - [1.2 Text block](#12-text-block)
+    ///     - [1.3 Escape block](#13-escape-block)
+    ///     - [1.4 Whitespace control](#14-whitespace-control)
+    /// </summary>
+    public class MarkdownListBlock : FillFlowContainer
+    {
+
     }
 
     /// <summary>
@@ -208,11 +217,9 @@ namespace osu.Framework.Markdown.Tests.Visual
                         this.TextSize = 50;
                         break;
                     case 2:
-                        Text = "  " + Text;
                         this.TextSize = 38;
                         break;
                     case 3:
-                        Text = "        " + Text;
                         this.TextSize = 21;
                         break;
                     case 4:
@@ -221,9 +228,8 @@ namespace osu.Framework.Markdown.Tests.Visual
                     case 5:
                         this.TextSize = 10;
                         break;
-
                     default:
-                        this.TextSize = 3;
+                        this.TextSize = 10;
                         return;
                 }
             }
@@ -232,28 +238,33 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     /// <summary>
     /// MarkdownQuoteBlock
+    /// > NOTE: This document does not describe the `liquid` language. Check the [`liquid website`](https://shopify.github.io/liquid/) directly.
     /// </summary>
-    public class MarkdownQuoteBlock : Container
+    public class MarkdownQuoteBlock : FillFlowContainer
     {
-        private SpriteText _text;
-        private Container _quoteContainer;
+        private TextFlowContainer _text;
         private Box _quoteBox;
         public MarkdownQuoteBlock()
         {
-            Add(_quoteContainer = new Container()
+            Direction = FillDirection.Horizontal;
+            AutoSizeAxes = Axes.Y;
+            RelativeSizeAxes = Axes.X;
+            Spacing = new Vector2(10);
+            Children = new Drawable[]
             {
-                Children = new Drawable[]
+                _quoteBox = new Box()
                 {
-                    _text = new SpriteText()
-                    {
-
-                    },
-                    _quoteBox = new Box()
-                    {
-
-                    }
-                }
-            });
+                    Colour = Color4.Gray,
+                    Width = 5,
+                    Anchor = Anchor.CentreLeft,
+                    Origin = Anchor.CentreLeft,
+                },
+                _text = new TextFlowContainer()
+                {
+                    RelativeSizeAxes = Axes.X,
+                    AutoSizeAxes = Axes.Y,
+                },
+            };
         }
 
         public MarkdownQuoteBlock(QuoteBlock quoteBlock) : this()
@@ -299,7 +310,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
                         content = content + " ";
                     }
-                    _text.Text = content;
+                    _text.AddText(content);
                 }
             }
         }
@@ -307,6 +318,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     /// <summary>
     /// MarkdownSeperator
+    /// 
     /// </summary>
     public class MarkdownSeperator : Box
     {
@@ -314,8 +326,8 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             Style = ParagraphBlock;
             RelativeSizeAxes = Axes.X;
-            Margin = new MarginPadding(){Left = 10,Right = 10};
             Height = 1;
+            Colour = Color4.Gray;
         }
 
         private ParagraphBlock _paragraphBlock;
