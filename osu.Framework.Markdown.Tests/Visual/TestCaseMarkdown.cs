@@ -133,9 +133,17 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 Add(new MarkdownHeading(headingBlock));
             }
+            else if(markdownObject is LiteralInline literalInline)
+            {
+                Add(new MarkdownSeperator(literalInline));
+            }
             else if(markdownObject is ParagraphBlock paragraphBlock)
             {
-                Add(new MarkdownSeperator(paragraphBlock));
+                var drawableParagraphBlock = ParagraphBlockHelper.GenerateText(paragraphBlock);
+                drawableParagraphBlock.RelativeSizeAxes = Axes.X;
+                drawableParagraphBlock.AutoSizeAxes = Axes.Y;
+                Add(drawableParagraphBlock);
+                
             }
             else if(markdownObject is QuoteBlock quoteBlock)
             {
@@ -148,6 +156,18 @@ namespace osu.Framework.Markdown.Tests.Visual
             else
             {
                 Add(new NotExistMarkdown(markdownObject));
+            }
+
+            //show child object
+            if (markdownObject is LeafBlock leafBlock)
+            {
+                if (leafBlock.Inline != null)
+                {
+                    foreach (var single in leafBlock.Inline)
+                    {
+                        AddMarkdownComponent(single);
+                    }
+                }
             }
         }
     }
@@ -189,6 +209,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         public MarkdownListBlock(ListBlock listBlock)
         {
+            Direction = FillDirection.Vertical;
+            AutoSizeAxes = Axes.Y;
+            RelativeSizeAxes = Axes.X;
             Style = listBlock;
         }
 
@@ -200,16 +223,39 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 _listBlock = value;
 
-                foreach (var singleBlock in _listBlock)
+                int rootLayerIndex = 0;
+                CreateLayer(_listBlock,rootLayerIndex);
+                void CreateLayer(ListBlock listBlock,int layerIndex)
                 {
-                    //TODO : singleBlock has two child
-                    //[0] : 1. Blocks
-                    //[1] : 1.1 Code block
-                    //      1.2 Text block
-                    //      1.3 Escape block
-                    //      1.4 Whitespace control
+                    foreach (var singleBlock in listBlock)
+                    {
+                        //TODO : singleBlock has two child
+                        //[0] : 1. Blocks
+                        //[1] : 1.1 Code block
+                        //      1.2 Text block
+                        //      1.3 Escape block
+                        //      1.4 Whitespace control
 
-                    //TODO :  QuoteBlock 裡面對應到的東西全都用 TextFlowContainer 完成，並拉出一個 Helper專門處理這些事情
+                        if (singleBlock is ListItemBlock listitemBlock)
+                        {
+                            foreach (var block in listitemBlock)
+                            {
+                                if (block is ParagraphBlock paragraphBlock)
+                                {
+                                    var drawableParagraphBlock = ParagraphBlockHelper.GenerateText(paragraphBlock);
+                                    drawableParagraphBlock.Margin = new MarginPadding(){Left = 20 * layerIndex};
+                                    drawableParagraphBlock.RelativeSizeAxes = Axes.X;
+                                    drawableParagraphBlock.AutoSizeAxes = Axes.Y;
+                                    Add(drawableParagraphBlock);
+                                }
+                                else if(block is ListBlock listBlock2)
+                                {
+                                    CreateLayer(listBlock2, layerIndex + 1);
+                                }
+                            }
+                        }
+                    }
+                   
                 }
             }
         }
@@ -289,12 +335,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Origin = Anchor.CentreLeft,
                     RelativeSizeAxes = Axes.Y,
                 },
-                _text = new TextFlowContainer()
-                {
-                    Margin = new MarginPadding(){Left = 20},
-                    RelativeSizeAxes = Axes.X,
-                    AutoSizeAxes = Axes.Y,
-                },
             };
         }
 
@@ -313,39 +353,17 @@ namespace osu.Framework.Markdown.Tests.Visual
 
                 if (_quoteBlock.LastChild is ParagraphBlock ParagraphBlock)
                 {
-                    string content = "";
-                    //TODO : get text from single
-                    foreach (var single in ParagraphBlock.Inline)
-                    {
-                        if (single is LiteralInline literalInline)
-                        {
-                            content = content + literalInline.Content.ToString();
-                        }
-                        else if (single is CodeInline codeInline)
-                        {
-                            content = content + codeInline.Content;
-                        }
-                        else if (single is EmphasisInline emphasisInline)
-                        {
-                            foreach (var child in emphasisInline)
-                            {
-                                content = content + child;
-                            }
-                        }
-                        else
-                        {
-                            //var content = single.Content;
-                            //_text.Text = content.Text.Substring(content.Start, content.Length);
-                            content = content + single.GetType();
-                        }
-
-                        content = content + " ";
-                    }
-                    _text.AddText(content);
+                    _text = ParagraphBlockHelper.GenerateText(ParagraphBlock);
+                    _text.Margin = new MarginPadding(){Left = 20};
+                    _text.RelativeSizeAxes = Axes.X;
+                    _text.AutoSizeAxes = Axes.Y;
+                    Add(_text);
                 }
             }
         }
     }
+
+    #region MarkdownSeperator.cs
 
     /// <summary>
     /// MarkdownSeperator
@@ -353,7 +371,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownSeperator : Box
     {
-        public MarkdownSeperator(ParagraphBlock ParagraphBlock)
+        public MarkdownSeperator(LiteralInline ParagraphBlock)
         {
             Style = ParagraphBlock;
             RelativeSizeAxes = Axes.X;
@@ -361,14 +379,70 @@ namespace osu.Framework.Markdown.Tests.Visual
             Colour = Color4.Gray;
         }
 
-        private ParagraphBlock _paragraphBlock;
-        public virtual ParagraphBlock Style
+        private LiteralInline _literalInLine;
+        public virtual LiteralInline Style
         {
-            get => _paragraphBlock;
+            get => _literalInLine;
             set
             {
-                _paragraphBlock = value;
+                _literalInLine = value;
             }
         }
     }
+
+    #endregion
+
+    #region ParagraphBlockHelper.cs
+
+    public static class ParagraphBlockHelper
+    {
+        public static TextFlowContainer GenerateText(ParagraphBlock paragraphBlock)
+        {
+             TextFlowContainer TextFlowContainer = new TextFlowContainer();
+             foreach (var single in paragraphBlock.Inline)
+             {
+                if (single is LiteralInline literalInline)
+                {
+                    TextFlowContainer.AddText(literalInline.Content.ToString());
+                }
+                else if (single is CodeInline codeInline)
+                {
+                    TextFlowContainer.AddText(codeInline.Content);
+                }
+                else if (single is EmphasisInline emphasisInline)
+                {
+                    foreach (var child in emphasisInline)
+                    {
+                        TextFlowContainer.AddText(child.ToString());
+                    }
+                }
+                else if(single is LinkInline linkInline)
+                {
+                    var url = linkInline.Url;
+                    if (linkInline.FirstChild is CodeInline codeInline2)
+                    {
+                        TextFlowContainer.AddParagraph(codeInline2.Content, t => t.Colour = Color4.LightBlue);
+                    }
+                    else if(linkInline.FirstChild is LiteralInline literalInline2)
+                    {
+                        TextFlowContainer.AddParagraph(literalInline2.Content.ToString(), t => t.Colour = Color4.LightBlue);
+                    }
+                    else
+                    {
+                        TextFlowContainer.AddText(single.GetType() + " does not containe" 
+                            + linkInline.FirstChild.GetType(), t => t.Colour = Color4.Red);
+                    }
+                }
+                else
+                {
+                    TextFlowContainer.AddText(single.GetType().ToString(), t => t.Colour = Color4.Red);
+                }
+            }
+            return TextFlowContainer;
+        }
+    }
+
+    #endregion
+
+    
 }
