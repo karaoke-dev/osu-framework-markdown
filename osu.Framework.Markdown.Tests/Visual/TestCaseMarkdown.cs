@@ -153,13 +153,21 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                  Add(new MarkdownListBlock(listBlock));
             }
+            else if(markdownObject is FencedCodeBlock fencedCodeBlock)
+            {
+                Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
+            }
+            //else if(markdownObject is CodeInline codeInline)
+            //{
+            //    Add(new MarkdownCodeInLine(codeInline));
+            //}
             else
             {
                 Add(new NotExistMarkdown(markdownObject));
             }
 
             //show child object
-            if (markdownObject is LeafBlock leafBlock)
+            if (markdownObject is LeafBlock leafBlock && !(markdownObject is ParagraphBlock))
             {
                 if (leafBlock.Inline != null)
                 {
@@ -193,6 +201,86 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 _markdownObject = value;
                 this.Text = "Does not found : " + _markdownObject?.GetType()?.Name + " ,Name : "+ _markdownObject?.ToString();
+            }
+        }
+    }
+
+    public class MarkdownFencedCodeBlock : Container
+    {
+        private TextFlowContainer _textFlowContainer;
+        public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
+        {
+            AutoSizeAxes = Axes.Y;
+            RelativeSizeAxes = Axes.X;
+            Children = new Drawable[]
+            {
+                new Box
+                {
+                    RelativeSizeAxes = Axes.Both,
+                    Colour = Color4.Gray,
+                    Alpha = 0.5f,
+                },
+                _textFlowContainer = new TextFlowContainer
+                {
+                    Margin = new MarginPadding{Left = 10,Right = 10,Top = 10,Bottom = 10},
+                    RelativeSizeAxes = Axes.X,
+                    AutoSizeAxes = Axes.Y
+                }
+            };
+            Style = fencedCodeBlock;
+        }
+
+        private FencedCodeBlock _fencedCodeBlock;
+        public virtual FencedCodeBlock Style
+        {
+            get => _fencedCodeBlock;
+            set
+            {
+                _fencedCodeBlock = value;
+
+                var lines = _fencedCodeBlock.Lines.Lines.Take(_fencedCodeBlock.Lines.Count);
+                foreach(var sligneLine in lines)
+                {
+                    var lineString = sligneLine.ToString();
+                    _textFlowContainer.AddParagraph(lineString);
+                }
+            }
+        }
+    }
+
+    public class MarkdownCodeInLine : Container
+    {
+        private TextFlowContainer _textFlowContainer;
+        public MarkdownCodeInLine(CodeInline codeInline)
+        {
+            AutoSizeAxes = Axes.Y;
+            RelativeSizeAxes = Axes.X;
+            Children = new Drawable[]
+            {
+                new Box
+                {
+                    RelativePositionAxes = Axes.Both,
+                    Colour = Color4.Gray,
+                },
+                _textFlowContainer = new TextFlowContainer
+                {
+                    Margin = new MarginPadding(){Left = 20},
+                    RelativeSizeAxes = Axes.X,
+                    AutoSizeAxes = Axes.Y
+                }
+            };
+            Style = codeInline;
+        }
+
+        private CodeInline _headingBlock;
+        public virtual CodeInline Style
+        {
+            get => _headingBlock;
+            set
+            {
+                _headingBlock = value;
+                _textFlowContainer.Text="";
+                _textFlowContainer.AddText(_headingBlock.Content);
             }
         }
     }
