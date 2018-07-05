@@ -141,6 +141,10 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 Add(new MarkdownQuoteBlock(quoteBlock));
             }
+            else if(markdownObject is ListBlock listBlock)
+            {
+                 Add(new MarkdownListBlock(listBlock));
+            }
             else
             {
                 Add(new NotExistMarkdown(markdownObject));
@@ -183,7 +187,32 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownListBlock : FillFlowContainer
     {
+        public MarkdownListBlock(ListBlock listBlock)
+        {
+            Style = listBlock;
+        }
 
+        private ListBlock _listBlock;
+        public virtual ListBlock Style
+        {
+            get => _listBlock;
+            set
+            {
+                _listBlock = value;
+
+                foreach (var singleBlock in _listBlock)
+                {
+                    //TODO : singleBlock has two child
+                    //[0] : 1. Blocks
+                    //[1] : 1.1 Code block
+                    //      1.2 Text block
+                    //      1.3 Escape block
+                    //      1.4 Whitespace control
+
+                    //TODO :  QuoteBlock 裡面對應到的東西全都用 TextFlowContainer 完成，並拉出一個 Helper專門處理這些事情
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -240,16 +269,16 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// MarkdownQuoteBlock
     /// > NOTE: This document does not describe the `liquid` language. Check the [`liquid website`](https://shopify.github.io/liquid/) directly.
     /// </summary>
-    public class MarkdownQuoteBlock : FillFlowContainer
+    public class MarkdownQuoteBlock : Container
     {
         private TextFlowContainer _text;
         private Box _quoteBox;
         public MarkdownQuoteBlock()
         {
-            Direction = FillDirection.Horizontal;
+            //Direction = FillDirection.Horizontal;
+            //Spacing = new Vector2(10);
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
-            Spacing = new Vector2(10);
             Children = new Drawable[]
             {
                 _quoteBox = new Box()
@@ -258,9 +287,11 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Width = 5,
                     Anchor = Anchor.CentreLeft,
                     Origin = Anchor.CentreLeft,
+                    RelativeSizeAxes = Axes.Y,
                 },
                 _text = new TextFlowContainer()
                 {
+                    Margin = new MarginPadding(){Left = 20},
                     RelativeSizeAxes = Axes.X,
                     AutoSizeAxes = Axes.Y,
                 },
