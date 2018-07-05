@@ -455,21 +455,35 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 if (single is LiteralInline literalInline)
                 {
-                    textFlowContainer.AddText(literalInline.Content.ToString());
+                    var text = literalInline.Content.ToString();
+                    if(lnline.GetNext(literalInline) is HtmlInline htmlInline && htmlInline.Tag.Contains('/'))
+                    {
+                        textFlowContainer.AddText(text, t=>t.Colour = Color4.Purple);
+                    }
+                    else if(literalInline.Parent is LinkInline linkInline)
+                    {
+                        textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
+                    }
+                    
+                    else
+                    {
+                        textFlowContainer.AddText(text);
+                    }
                 }
                 else if (single is CodeInline codeInline)
                 {
-                    textFlowContainer.AddText(codeInline.Content);
+                    textFlowContainer.AddText(codeInline.Content ,t => t.BorderColour = Color4.Green);
                 }
                 else if (single is EmphasisInline emphasisInline)
                 {
-                    foreach (var child in emphasisInline)
-                    {
-                        textFlowContainer.AddText(child.ToString());
-                    }
+                    //foreach (var child in emphasisInline)
+                    //{
+                    //    textFlowContainer.AddText(child.ToString());
+                    //}
                 }
-                else if(single is LinkInline linkInline)
+                else if(single is LinkInline || single is HtmlInline)
                 {
+                    /*
                     var url = linkInline.Url;
                     if (linkInline.FirstChild is CodeInline codeInline2)
                     {
@@ -484,10 +498,17 @@ namespace osu.Framework.Markdown.Tests.Visual
                         textFlowContainer.AddText(single.GetType() + " does not containe" 
                             + linkInline.FirstChild.GetType(), t => t.Colour = Color4.Red);
                     }
+                     */
                 }
                 else
                 {
                     textFlowContainer.AddText(single.GetType().ToString(), t => t.Colour = Color4.Red);
+                }
+
+                //generate child
+                if(single is ContainerInline containerInline)
+                {
+                    GeneratePartial(textFlowContainer,containerInline);
                 }
             }
             return textFlowContainer;
@@ -496,5 +517,16 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     #endregion
 
-    
+    internal static class ListExtension
+    {
+        public static T GetNext<T>(this IEnumerable<T> guidList, T current)
+        {
+            return guidList.SkipWhile(i => !i.Equals(current)).Skip(1).FirstOrDefault();
+        }
+
+        public static Guid GetPrevious(IEnumerable<Guid> guidList, Guid current)
+        {
+            return guidList.TakeWhile(i => !i.Equals(current)).LastOrDefault();
+        }
+    }
 }
