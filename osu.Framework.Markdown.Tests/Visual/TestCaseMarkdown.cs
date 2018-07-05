@@ -324,15 +324,14 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// <summary>
     /// MarkdownHeading
     /// </summary>
-    public class MarkdownHeading : SpriteText
+    public class MarkdownHeading : Container
     {
-        public MarkdownHeading()
-        {
-
-        }
+        private TextFlowContainer _text;
 
         public MarkdownHeading(HeadingBlock headingBlock)
         {
+            AutoSizeAxes = Axes.Y;
+            RelativeSizeAxes = Axes.X;
             Style = headingBlock;
         }
 
@@ -344,29 +343,36 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 _headingBlock = value;
                 var level = _headingBlock.Level;
-                Text = _headingBlock.Inline.FirstChild.ToString();
+                string text = _headingBlock.Inline.FirstChild.ToString();
+                int textSize = 0;
 
                 switch (level)
                 {
                     case 1:
-                        this.TextSize = 50;
+                        textSize = 50;
                         break;
                     case 2:
-                        this.TextSize = 38;
+                        textSize = 38;
                         break;
                     case 3:
-                        this.TextSize = 21;
+                        textSize = 28;
                         break;
                     case 4:
-                        this.TextSize = 21;
+                        textSize = 21;
                         break;
                     case 5:
-                        this.TextSize = 10;
+                        textSize = 10;
                         break;
                     default:
-                        this.TextSize = 10;
+                        textSize = 10;
                         return;
                 }
+                _text = new TextFlowContainer();
+                _text.RelativeSizeAxes = Axes.X;
+                _text.AutoSizeAxes = Axes.Y;
+                _text.AddText(text,t=>t.TextSize = textSize);
+                _text = ParagraphBlockHelper.GeneratePartial(_text,_headingBlock.Inline);
+                Add(_text);
             }
         }
     }
@@ -470,14 +476,23 @@ namespace osu.Framework.Markdown.Tests.Visual
                 if (single is LiteralInline literalInline)
                 {
                     var text = literalInline.Content.ToString();
-                    if(lnline.GetNext(literalInline) is HtmlInline htmlInline && htmlInline.Tag.Contains('/'))
+                    if(lnline.GetNext(literalInline) is HtmlInline 
+                        && lnline.GetPrevious(literalInline) is HtmlInline htmlInline)
                     {
-                        textFlowContainer.AddText(text, t=>t.Colour = Color4.Purple);
+                        textFlowContainer.AddText(text, t=>t.Colour = Color4.MediumPurple);
+                    }
+                    else if(lnline.GetNext(literalInline) is HtmlEntityInline htmlEntityInline)
+                    {
+                        textFlowContainer.AddText(text, t=>t.Colour = Color4.LawnGreen);
                     }
                     else if(literalInline.Parent is LinkInline linkInline)
                     {
                         textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
                     }
+                    //else if(literalInline.Parent is HeadingBlock headingBlock)
+                    //{
+                    //    
+                    //}
                     else
                     {
                         textFlowContainer.AddText(text);
@@ -485,7 +500,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
                 else if (single is CodeInline codeInline)
                 {
-                    textFlowContainer.AddText(codeInline.Content ,t => t.BorderColour = Color4.Green);
+                    textFlowContainer.AddText(codeInline.Content ,t => t.Colour = Color4.Orange);
                 }
                 else if (single is EmphasisInline emphasisInline)
                 {
@@ -494,9 +509,13 @@ namespace osu.Framework.Markdown.Tests.Visual
                     //    textFlowContainer.AddText(child.ToString());
                     //}
                 }
-                else if(single is LinkInline || single is HtmlInline)
+                else if(single is LinkInline || single is HtmlInline || single is HtmlEntityInline)
                 {
                     //DO nothing
+                }
+                else if (single is LineBreakInline)
+                {
+                    //IDK what is this but just ignore
                 }
                 else
                 {
@@ -522,7 +541,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             return guidList.SkipWhile(i => !i.Equals(current)).Skip(1).FirstOrDefault();
         }
 
-        public static Guid GetPrevious(IEnumerable<Guid> guidList, Guid current)
+        public static T GetPrevious<T>(this IEnumerable<T> guidList, T current)
         {
             return guidList.TakeWhile(i => !i.Equals(current)).LastOrDefault();
         }
