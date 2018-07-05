@@ -143,7 +143,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                 drawableParagraphBlock.RelativeSizeAxes = Axes.X;
                 drawableParagraphBlock.AutoSizeAxes = Axes.Y;
                 Add(drawableParagraphBlock);
-                
             }
             else if(markdownObject is QuoteBlock quoteBlock)
             {
@@ -151,16 +150,12 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
             else if(markdownObject is ListBlock listBlock)
             {
-                 Add(new MarkdownListBlock(listBlock));
+                Add(new MarkdownListBlock(listBlock));
             }
             else if(markdownObject is FencedCodeBlock fencedCodeBlock)
             {
                 Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
             }
-            //else if(markdownObject is CodeInline codeInline)
-            //{
-            //    Add(new MarkdownCodeInLine(codeInline));
-            //}
             else
             {
                 Add(new NotExistMarkdown(markdownObject));
@@ -244,43 +239,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                     var lineString = sligneLine.ToString();
                     _textFlowContainer.AddParagraph(lineString);
                 }
-            }
-        }
-    }
-
-    public class MarkdownCodeInLine : Container
-    {
-        private TextFlowContainer _textFlowContainer;
-        public MarkdownCodeInLine(CodeInline codeInline)
-        {
-            AutoSizeAxes = Axes.Y;
-            RelativeSizeAxes = Axes.X;
-            Children = new Drawable[]
-            {
-                new Box
-                {
-                    RelativePositionAxes = Axes.Both,
-                    Colour = Color4.Gray,
-                },
-                _textFlowContainer = new TextFlowContainer
-                {
-                    Margin = new MarginPadding(){Left = 20},
-                    RelativeSizeAxes = Axes.X,
-                    AutoSizeAxes = Axes.Y
-                }
-            };
-            Style = codeInline;
-        }
-
-        private CodeInline _headingBlock;
-        public virtual CodeInline Style
-        {
-            get => _headingBlock;
-            set
-            {
-                _headingBlock = value;
-                _textFlowContainer.Text="";
-                _textFlowContainer.AddText(_headingBlock.Content);
             }
         }
     }
@@ -487,21 +445,27 @@ namespace osu.Framework.Markdown.Tests.Visual
         public static TextFlowContainer GenerateText(ParagraphBlock paragraphBlock)
         {
              TextFlowContainer TextFlowContainer = new TextFlowContainer();
-             foreach (var single in paragraphBlock.Inline)
-             {
+             GeneratePartial(TextFlowContainer,paragraphBlock.Inline);
+            return TextFlowContainer;
+        }
+
+        public static TextFlowContainer GeneratePartial(TextFlowContainer textFlowContainer, ContainerInline lnline)
+        {
+            foreach (var single in lnline)
+            {
                 if (single is LiteralInline literalInline)
                 {
-                    TextFlowContainer.AddText(literalInline.Content.ToString());
+                    textFlowContainer.AddText(literalInline.Content.ToString());
                 }
                 else if (single is CodeInline codeInline)
                 {
-                    TextFlowContainer.AddText(codeInline.Content);
+                    textFlowContainer.AddText(codeInline.Content);
                 }
                 else if (single is EmphasisInline emphasisInline)
                 {
                     foreach (var child in emphasisInline)
                     {
-                        TextFlowContainer.AddText(child.ToString());
+                        textFlowContainer.AddText(child.ToString());
                     }
                 }
                 else if(single is LinkInline linkInline)
@@ -509,24 +473,24 @@ namespace osu.Framework.Markdown.Tests.Visual
                     var url = linkInline.Url;
                     if (linkInline.FirstChild is CodeInline codeInline2)
                     {
-                        TextFlowContainer.AddParagraph(codeInline2.Content, t => t.Colour = Color4.LightBlue);
+                        textFlowContainer.AddParagraph(codeInline2.Content, t => t.Colour = Color4.LightBlue);
                     }
                     else if(linkInline.FirstChild is LiteralInline literalInline2)
                     {
-                        TextFlowContainer.AddParagraph(literalInline2.Content.ToString(), t => t.Colour = Color4.LightBlue);
+                        textFlowContainer.AddParagraph(literalInline2.Content.ToString(), t => t.Colour = Color4.LightBlue);
                     }
                     else
                     {
-                        TextFlowContainer.AddText(single.GetType() + " does not containe" 
+                        textFlowContainer.AddText(single.GetType() + " does not containe" 
                             + linkInline.FirstChild.GetType(), t => t.Colour = Color4.Red);
                     }
                 }
                 else
                 {
-                    TextFlowContainer.AddText(single.GetType().ToString(), t => t.Colour = Color4.Red);
+                    textFlowContainer.AddText(single.GetType().ToString(), t => t.Colour = Color4.Red);
                 }
             }
-            return TextFlowContainer;
+            return textFlowContainer;
         }
     }
 
