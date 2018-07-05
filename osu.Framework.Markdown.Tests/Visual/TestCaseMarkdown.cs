@@ -121,44 +121,45 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         public void ImportMarkdownDocument(MarkdownDocument document)
         {
+            int rootLayerIndex = 0;
             foreach (var component in document)
             {
-                AddMarkdownComponent(component);
+                AddMarkdownComponent(component,this,rootLayerIndex);
             }
         }
 
-        public void AddMarkdownComponent(IMarkdownObject markdownObject)
+        public void AddMarkdownComponent(IMarkdownObject markdownObject,FillFlowContainer container,int layerIndex)
         {
             if(markdownObject is HeadingBlock headingBlock)
             {
-                Add(new MarkdownHeading(headingBlock));
+                container.Add(new MarkdownHeading(headingBlock));
             }
             else if(markdownObject is LiteralInline literalInline)
             {
-                Add(new MarkdownSeperator(literalInline));
+                container.Add(new MarkdownSeperator(literalInline));
             }
             else if(markdownObject is ParagraphBlock paragraphBlock)
             {
                 var drawableParagraphBlock = ParagraphBlockHelper.GenerateText(paragraphBlock);
                 drawableParagraphBlock.RelativeSizeAxes = Axes.X;
                 drawableParagraphBlock.AutoSizeAxes = Axes.Y;
-                Add(drawableParagraphBlock);
+                container.Add(drawableParagraphBlock);
             }
             else if(markdownObject is QuoteBlock quoteBlock)
             {
-                Add(new MarkdownQuoteBlock(quoteBlock));
+                container.Add(new MarkdownQuoteBlock(quoteBlock));
             }
             else if(markdownObject is ListBlock listBlock)
             {
-                Add(new MarkdownListBlock(listBlock));
+                container.Add(new MarkdownListBlock(listBlock));
             }
             else if(markdownObject is FencedCodeBlock fencedCodeBlock)
             {
-                Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
+                container.Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
             }
             else
             {
-                Add(new NotExistMarkdown(markdownObject));
+                container.Add(new NotExistMarkdown(markdownObject));
             }
 
             //show child object
@@ -168,7 +169,20 @@ namespace osu.Framework.Markdown.Tests.Visual
                 {
                     foreach (var single in leafBlock.Inline)
                     {
-                        AddMarkdownComponent(single);
+                        //TODO : 如果想要用遞迴顯示就改用這個
+                        /*
+                        var childContainer = new FillFlowContainer()
+                        {
+                            Direction = FillDirection.Vertical,
+                            Spacing = new OpenTK.Vector2(10, 10),
+                            Margin = new MarginPadding(){Left = 20,Right = 20},
+                            AutoSizeAxes = Axes.Y,
+                            RelativeSizeAxes = Axes.X,
+                        };
+                        container.Add(childContainer);
+                        */
+                        
+                        AddMarkdownComponent(single,container,layerIndex + 1);
                     }
                 }
             }
@@ -464,7 +478,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                     {
                         textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
                     }
-                    
                     else
                     {
                         textFlowContainer.AddText(text);
@@ -483,22 +496,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
                 else if(single is LinkInline || single is HtmlInline)
                 {
-                    /*
-                    var url = linkInline.Url;
-                    if (linkInline.FirstChild is CodeInline codeInline2)
-                    {
-                        textFlowContainer.AddParagraph(codeInline2.Content, t => t.Colour = Color4.LightBlue);
-                    }
-                    else if(linkInline.FirstChild is LiteralInline literalInline2)
-                    {
-                        textFlowContainer.AddParagraph(literalInline2.Content.ToString(), t => t.Colour = Color4.LightBlue);
-                    }
-                    else
-                    {
-                        textFlowContainer.AddText(single.GetType() + " does not containe" 
-                            + linkInline.FirstChild.GetType(), t => t.Colour = Color4.Red);
-                    }
-                     */
+                    //DO nothing
                 }
                 else
                 {
