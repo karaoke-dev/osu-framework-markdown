@@ -71,7 +71,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             //var headings = doc.Descendants<ParagraphBlock>().Take(20).ToList();
             //var headings = doc.Descendants<QuoteBlock>().Take(20).ToList();
 
-            var container = new MarkdownScrollView()
+            var container = new MarkdownScrollContainer()
             {
                 RelativeSizeAxes = Axes.Both,
             };
@@ -84,13 +84,13 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    /// 
+    /// MarkDownScrollContainer
     /// </summary>
-    public class MarkdownScrollView : ScrollContainer
+    public class MarkdownScrollContainer : ScrollContainer
     {
         private MarkdownContainer _markdownContainer;
 
-        public MarkdownScrollView()
+        public MarkdownScrollContainer()
         {
             ScrollbarOverlapsContent = false;
             Child = _markdownContainer = new MarkdownContainer()
@@ -109,6 +109,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     /// <summary>
     /// MarkdownContainer
+    /// Contains  all the markdown component <see cref="IMarkdownObject"/> in <see cref="MarkdownDocument"/>
     /// </summary>
     public class MarkdownContainer : FillFlowContainer
     {
@@ -169,7 +170,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 {
                     foreach (var single in leafBlock.Inline)
                     {
-                        //TODO : 如果想要用遞迴顯示就改用這個
+                        //TODO : if mant to insert markdown object recursive , use this instead.
                         /*
                         var childContainer = new FillFlowContainer()
                         {
@@ -180,6 +181,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                             RelativeSizeAxes = Axes.X,
                         };
                         container.Add(childContainer);
+                        AddMarkdownComponent(single,childContainer,layerIndex + 1);
                         */
                         
                         AddMarkdownComponent(single,container,layerIndex + 1);
@@ -191,9 +193,9 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     /// <summary>
     /// NotExistMarkdown : 
-    /// shows the markdown syntex that not exist in drawable
+    /// shows the <see cref="IMarkdownObject"/> does not exist in drawable object
     /// </summary>
-    public class NotExistMarkdown : SpriteText
+    internal class NotExistMarkdown : SpriteText
     {
         public NotExistMarkdown(IMarkdownObject markdownObject)
         {
@@ -214,7 +216,13 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
     }
 
-    public class MarkdownFencedCodeBlock : Container
+    /// <summary>
+    /// MarkdownFencedCodeBlock :
+    /// ```
+    /// foo
+    /// ```
+    /// </summary>
+    internal class MarkdownFencedCodeBlock : Container
     {
         private TextFlowContainer _textFlowContainer;
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
@@ -265,7 +273,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     ///     - [1.3 Escape block](#13-escape-block)
     ///     - [1.4 Whitespace control](#14-whitespace-control)
     /// </summary>
-    public class MarkdownListBlock : FillFlowContainer
+    internal class MarkdownListBlock : FillFlowContainer
     {
         public MarkdownListBlock(ListBlock listBlock)
         {
@@ -322,9 +330,13 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    /// MarkdownHeading
+    /// MarkdownHeading : 
+    /// #Heading1
+    /// ##Heading2
+    /// ###Heading3
+    /// ###3Heading4
     /// </summary>
-    public class MarkdownHeading : Container
+    internal class MarkdownHeading : Container
     {
         private TextFlowContainer _text;
 
@@ -378,10 +390,10 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    /// MarkdownQuoteBlock
+    /// MarkdownQuoteBlock : 
     /// > NOTE: This document does not describe the `liquid` language. Check the [`liquid website`](https://shopify.github.io/liquid/) directly.
     /// </summary>
-    public class MarkdownQuoteBlock : Container
+    internal class MarkdownQuoteBlock : Container
     {
         private TextFlowContainer _text;
         private Box _quoteBox;
@@ -432,10 +444,10 @@ namespace osu.Framework.Markdown.Tests.Visual
     #region MarkdownSeperator.cs
 
     /// <summary>
-    /// MarkdownSeperator
-    /// 
+    /// MarkdownSeperator : 
+    /// (spacing)
     /// </summary>
-    public class MarkdownSeperator : Box
+    internal class MarkdownSeperator : Box
     {
         public MarkdownSeperator(LiteralInline ParagraphBlock)
         {
@@ -460,7 +472,10 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     #region ParagraphBlockHelper.cs
 
-    public static class ParagraphBlockHelper
+    /// <summary>
+    /// Fill <see cref="Inline"/> into <see cref="TextFlowContainer"/>
+    /// </summary>
+    internal static class ParagraphBlockHelper
     {
         public static TextFlowContainer GenerateText(ParagraphBlock paragraphBlock)
         {
@@ -534,6 +549,9 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     #endregion
 
+    /// <summary>
+    /// List extension
+    /// </summary>
     internal static class ListExtension
     {
         public static T GetNext<T>(this IEnumerable<T> guidList, T current)
