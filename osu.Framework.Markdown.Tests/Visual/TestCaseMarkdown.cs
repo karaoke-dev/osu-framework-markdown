@@ -14,6 +14,7 @@ using osu.Framework.Graphics.Sprites;
 using osu.Framework.Testing;
 using osu.Framework.Graphics.Shapes;
 using Markdig.Syntax.Inlines;
+using osu.Framework.Graphics.Animations;
 using OpenTK;
 using OpenTK.Graphics;
 
@@ -210,20 +211,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         public NotExistMarkdown(IMarkdownObject markdownObject)
         {
-            Style = markdownObject;
-            this.Colour = new Color4(255,0,0,255);
-            this.TextSize = 21;
-        }
-
-        private IMarkdownObject _markdownObject;
-        public virtual IMarkdownObject Style
-        {
-            get => _markdownObject;
-            set
-            {
-                _markdownObject = value;
-                this.Text = "Does not found : " + _markdownObject?.GetType()?.Name + " ,Name : "+ _markdownObject?.ToString();
-            }
+            Colour = new Color4(255,0,0,255);
+            TextSize = 21;
+            Text = markdownObject?.GetType() + "Does not be implemented";
         }
     }
 
@@ -236,6 +226,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     internal class MarkdownFencedCodeBlock : Container
     {
         private readonly TextFlowContainer _textFlowContainer;
+
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
             AutoSizeAxes = Axes.Y;
@@ -255,23 +246,12 @@ namespace osu.Framework.Markdown.Tests.Visual
                     AutoSizeAxes = Axes.Y
                 }
             };
-            Style = fencedCodeBlock;
-        }
 
-        private FencedCodeBlock _fencedCodeBlock;
-        public FencedCodeBlock Style
-        {
-            get => _fencedCodeBlock;
-            set
+            var lines = fencedCodeBlock.Lines.Lines.Take(fencedCodeBlock.Lines.Count);
+            foreach(var sligneLine in lines)
             {
-                _fencedCodeBlock = value;
-
-                var lines = _fencedCodeBlock.Lines.Lines.Take(_fencedCodeBlock.Lines.Count);
-                foreach(var sligneLine in lines)
-                {
-                    var lineString = sligneLine.ToString();
-                    _textFlowContainer.AddParagraph(lineString);
-                }
+                var lineString = sligneLine.ToString();
+                _textFlowContainer.AddParagraph(lineString);
             }
         }
     }
@@ -291,52 +271,42 @@ namespace osu.Framework.Markdown.Tests.Visual
             Direction = FillDirection.Vertical;
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
-            Style = listBlock;
+
+            int rootLayerIndex = 0;
+            CreateLayer(listBlock,rootLayerIndex);
+            
         }
 
-        private ListBlock _listBlock;
-        public ListBlock Style
+        void CreateLayer(ListBlock listBlock,int layerIndex)
         {
-            get => _listBlock;
-            set
+            foreach (var singleBlock in listBlock)
             {
-                _listBlock = value;
+                //TODO : singleBlock has two child
+                //[0] : 1. Blocks
+                //[1] : 1.1 Code block
+                //      1.2 Text block
+                //      1.3 Escape block
+                //      1.4 Whitespace control
 
-                int rootLayerIndex = 0;
-                CreateLayer(_listBlock,rootLayerIndex);
-                void CreateLayer(ListBlock listBlock,int layerIndex)
+                if (singleBlock is ListItemBlock listitemBlock)
                 {
-                    foreach (var singleBlock in listBlock)
+                    foreach (var block in listitemBlock)
                     {
-                        //TODO : singleBlock has two child
-                        //[0] : 1. Blocks
-                        //[1] : 1.1 Code block
-                        //      1.2 Text block
-                        //      1.3 Escape block
-                        //      1.4 Whitespace control
-
-                        if (singleBlock is ListItemBlock listitemBlock)
+                        if (block is ParagraphBlock paragraphBlock)
                         {
-                            foreach (var block in listitemBlock)
-                            {
-                                if (block is ParagraphBlock paragraphBlock)
-                                {
-                                    var drawableParagraphBlock = ParagraphBlockHelper.GenerateText(paragraphBlock);
-                                    drawableParagraphBlock.Margin = new MarginPadding(){Left = 20 * layerIndex};
-                                    drawableParagraphBlock.RelativeSizeAxes = Axes.X;
-                                    drawableParagraphBlock.AutoSizeAxes = Axes.Y;
-                                    Add(drawableParagraphBlock);
-                                }
-                                else if(block is ListBlock listBlock2)
-                                {
-                                    CreateLayer(listBlock2, layerIndex + 1);
-                                }
-                            }
+                            var drawableParagraphBlock = ParagraphBlockHelper.GenerateText(paragraphBlock);
+                            drawableParagraphBlock.Margin = new MarginPadding(){Left = 20 * layerIndex};
+                            drawableParagraphBlock.RelativeSizeAxes = Axes.X;
+                            drawableParagraphBlock.AutoSizeAxes = Axes.Y;
+                            Add(drawableParagraphBlock);
+                        }
+                        else if(block is ListBlock listBlock2)
+                        {
+                            CreateLayer(listBlock2, layerIndex + 1);
                         }
                     }
-                   
                 }
-            }
+            }       
         }
     }
 
@@ -349,54 +319,47 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownHeadingBlock : Container
     {
-        private TextFlowContainer _text;
+        private readonly TextFlowContainer _textFlowContainer;
 
         public MarkdownHeadingBlock(HeadingBlock headingBlock)
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
-            Style = headingBlock;
-        }
 
-        private HeadingBlock _headingBlock;
-        public HeadingBlock Style
-        {
-            get => _headingBlock;
-            set
+            Children = new Drawable[]
             {
-                _headingBlock = value;
-                var level = _headingBlock.Level;
-                string text = _headingBlock.Inline.FirstChild.ToString();
-                int textSize = 0;
-
-                switch (level)
+                _textFlowContainer = new TextFlowContainer
                 {
-                    case 1:
-                        textSize = 50;
-                        break;
-                    case 2:
-                        textSize = 38;
-                        break;
-                    case 3:
-                        textSize = 28;
-                        break;
-                    case 4:
-                        textSize = 21;
-                        break;
-                    case 5:
-                        textSize = 10;
-                        break;
-                    default:
-                        textSize = 10;
-                        return;
+                    RelativeSizeAxes = Axes.X,
+                    AutoSizeAxes = Axes.Y
                 }
-                _text = new TextFlowContainer();
-                _text.RelativeSizeAxes = Axes.X;
-                _text.AutoSizeAxes = Axes.Y;
-                _text.AddText(text,t=>t.TextSize = textSize);
-                _text = ParagraphBlockHelper.GeneratePartial(_text,_headingBlock.Inline);
-                Add(_text);
+            };
+
+            var level = headingBlock.Level;
+            string text = headingBlock.Inline.FirstChild.ToString();
+            int textSize = 10;
+
+            switch (level)
+            {
+                case 1:
+                    textSize = 50;
+                    break;
+                case 2:
+                    textSize = 38;
+                    break;
+                case 3:
+                    textSize = 28;
+                    break;
+                case 4:
+                    textSize = 21;
+                    break;
+                case 5:
+                    textSize = 10;
+                    break;
             }
+
+            _textFlowContainer.AddText(text,t=>t.TextSize = textSize);
+            _textFlowContainer = ParagraphBlockHelper.GeneratePartial(_textFlowContainer,headingBlock.Inline);
         }
     }
 
@@ -406,14 +369,13 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownQuoteBlock : Container
     {
-        private TextFlowContainer _text;
+        private readonly TextFlowContainer _textFlowContainer;
         private Box _quoteBox;
-        public MarkdownQuoteBlock()
+        public MarkdownQuoteBlock(QuoteBlock quoteBlock)
         {
-            //Direction = FillDirection.Horizontal;
-            //Spacing = new Vector2(10);
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
+
             Children = new Drawable[]
             {
                 _quoteBox = new Box()
@@ -424,30 +386,17 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Origin = Anchor.CentreLeft,
                     RelativeSizeAxes = Axes.Y,
                 },
-            };
-        }
-
-        public MarkdownQuoteBlock(QuoteBlock quoteBlock) : this()
-        {
-            Style = quoteBlock;
-        }
-
-        private QuoteBlock _quoteBlock;
-        public QuoteBlock Style
-        {
-            get => _quoteBlock;
-            set
-            {
-                _quoteBlock = value;
-
-                if (_quoteBlock.LastChild is ParagraphBlock ParagraphBlock)
+                _textFlowContainer = new TextFlowContainer
                 {
-                    _text = ParagraphBlockHelper.GenerateText(ParagraphBlock);
-                    _text.Margin = new MarginPadding(){Left = 20};
-                    _text.RelativeSizeAxes = Axes.X;
-                    _text.AutoSizeAxes = Axes.Y;
-                    Add(_text);
+                    RelativeSizeAxes = Axes.X,
+                    AutoSizeAxes = Axes.Y,
+                    Margin = new MarginPadding(){Left = 20}
                 }
+            };
+
+            if (quoteBlock.LastChild is ParagraphBlock paragraphBlock)
+            {
+                _textFlowContainer = ParagraphBlockHelper.GeneratePartial(_textFlowContainer,paragraphBlock.Inline);
             }
         }
     }
@@ -460,20 +409,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         public MarkdownSeperator(LiteralInline ParagraphBlock)
         {
-            Style = ParagraphBlock;
             RelativeSizeAxes = Axes.X;
             Height = 1;
             Colour = Color4.Gray;
-        }
-
-        private LiteralInline _literalInLine;
-        public virtual LiteralInline Style
-        {
-            get => _literalInLine;
-            set
-            {
-                _literalInLine = value;
-            }
         }
     }
 
@@ -484,9 +422,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         public static TextFlowContainer GenerateText(ParagraphBlock paragraphBlock)
         {
-             TextFlowContainer TextFlowContainer = new TextFlowContainer();
-             GeneratePartial(TextFlowContainer,paragraphBlock.Inline);
-            return TextFlowContainer;
+             TextFlowContainer textFlowContainer = new TextFlowContainer();
+             GeneratePartial(textFlowContainer,paragraphBlock.Inline);
+            return textFlowContainer;
         }
 
         public static TextFlowContainer GeneratePartial(TextFlowContainer textFlowContainer, ContainerInline lnline)
