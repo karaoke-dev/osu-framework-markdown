@@ -98,8 +98,8 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         public string MarkdownText
         {
-            get=>_markdownContainer.MarkdownText;
-            set=>_markdownContainer.MarkdownText = value;
+            get => _markdownContainer.MarkdownText;
+            set => _markdownContainer.MarkdownText = value;
         }
 
         private readonly MarkdownContainer _markdownContainer;
@@ -123,6 +123,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     public class MarkdownContainer : FillFlowContainer
     {
         private const int seperator_px = 25;
+
         public MarkdownDocument MarkdownDocument
         {
             get => _document;
@@ -143,12 +144,12 @@ namespace osu.Framework.Markdown.Tests.Visual
         public string MarkdownText
         {
             //TODO : get value from MarkdownDocument
-            get=> "";
+            get => "";
             set
             {
                 var markdownText = value;
                 var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub).Build();
-                MarkdownDocument = Markdig.Markdown.Parse(markdownText, pipeline);
+                MarkdownDocument = Markdown.Parse(markdownText, pipeline);
             }
         }
 
@@ -174,20 +175,20 @@ namespace osu.Framework.Markdown.Tests.Visual
             else if (markdownObject is ParagraphBlock paragraphBlock)
             {
                 var drawableParagraphBlock = new MarkdownTextFlowContainer();
-                switch(layerIndex)
+                switch (layerIndex)
                 {
                     case 1:
-                        drawableParagraphBlock.AddText("@ ",t => t.Colour = Color4.DarkGray);
+                        drawableParagraphBlock.AddText("@ ", t => t.Colour = Color4.DarkGray);
                         break;
                     case 2:
-                        drawableParagraphBlock.AddText("# ",t => t.Colour = Color4.DarkGray);
-                    break;
+                        drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
+                        break;
                     case 3:
-                        drawableParagraphBlock.AddText("+ ",t => t.Colour = Color4.DarkGray);
-                    break;
+                        drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
+                        break;
                     case 4:
-                        drawableParagraphBlock.AddText("+ ",t => t.Colour = Color4.DarkGray);
-                    break;
+                        drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
+                        break;
                 }
 
                 drawableParagraphBlock = ParagraphBlockHelper.GeneratePartial(drawableParagraphBlock, paragraphBlock.Inline);
@@ -206,7 +207,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 var childContainer = new FillFlowContainer()
                 {
                     Direction = FillDirection.Vertical,
-                    Spacing = new OpenTK.Vector2(10, 10),
+                    Spacing = new Vector2(10, 10),
                     Margin = new MarginPadding() { Left = 25, Right = 10 },
                     AutoSizeAxes = Axes.Y,
                     RelativeSizeAxes = Axes.X,
@@ -228,14 +229,14 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 container.Add(new NotExistMarkdown(markdownObject));
             }
-    
+
             //show seperator line
             if (markdownObject is LeafBlock leafBlock && !(markdownObject is ParagraphBlock))
             {
                 if (leafBlock.Inline != null)
                 {
                     container.Add(new MarkdownSeperator(null));
-                }   
+                }
             }
         }
     }
@@ -328,20 +329,20 @@ namespace osu.Framework.Markdown.Tests.Visual
                             var drawableParagraphBlock = new MarkdownTextFlowContainer();
                             drawableParagraphBlock.Margin = new MarginPadding { Left = 20 * layerIndex };
 
-                            switch(layerIndex)
+                            switch (layerIndex)
                             {
                                 case 1:
-                                    drawableParagraphBlock.AddText("@ ",t => t.Colour = Color4.DarkGray);
+                                    drawableParagraphBlock.AddText("@ ", t => t.Colour = Color4.DarkGray);
                                     break;
                                 case 2:
-                                    drawableParagraphBlock.AddText("# ",t => t.Colour = Color4.DarkGray);
-                                break;
+                                    drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
+                                    break;
                                 case 3:
-                                    drawableParagraphBlock.AddText("+ ",t => t.Colour = Color4.DarkGray);
-                                break;
+                                    drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
+                                    break;
                                 case 4:
-                                    drawableParagraphBlock.AddText("+ ",t => t.Colour = Color4.DarkGray);
-                                break;
+                                    drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
+                                    break;
                             }
 
                             drawableParagraphBlock = ParagraphBlockHelper.GeneratePartial(drawableParagraphBlock, paragraphBlock.Inline);
@@ -374,7 +375,6 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 _textFlowContainer = new MarkdownTextFlowContainer
                 {
-                    
                 }
             };
 
@@ -436,7 +436,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
             };
 
-            if (quoteBlock.LastChild is ParagraphBlock paragraphBlock) 
+            if (quoteBlock.LastChild is ParagraphBlock paragraphBlock)
                 _textFlowContainer = ParagraphBlockHelper.GeneratePartial(_textFlowContainer, paragraphBlock.Inline);
         }
     }
@@ -478,15 +478,15 @@ namespace osu.Framework.Markdown.Tests.Visual
                         && lnline.GetPrevious(literalInline) is HtmlInline htmlInline)
                     {
                         textFlowContainer.AddText(text, t => t.Colour = Color4.MediumPurple);
-                    } 
+                    }
                     else if (lnline.GetNext(literalInline) is HtmlEntityInline htmlEntityInline)
                     {
                         textFlowContainer.AddText(text, t => t.Colour = Color4.GreenYellow);
                     }
                     else if (literalInline.Parent is LinkInline linkInline)
                     {
-                       textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue); 
-                    }  
+                        textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
+                    }
                     else
                         textFlowContainer.AddText(text);
                 }
@@ -522,7 +522,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
     }
 
-    public class MarkdownTextFlowContainer : TextFlowContainer
+    internal class MarkdownTextFlowContainer : TextFlowContainer
     {
         public MarkdownTextFlowContainer()
         {
