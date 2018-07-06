@@ -76,7 +76,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 RelativeSizeAxes = Axes.Both,
             };
 
-            container.ImportMarkdownDocument(doc);
+            container.MarkdownDocument = doc;
             
 
             Add(container);
@@ -88,7 +88,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownScrollContainer : ScrollContainer
     {
-        private MarkdownContainer _markdownContainer;
+        private readonly MarkdownContainer _markdownContainer;
 
         public MarkdownScrollContainer()
         {
@@ -101,9 +101,10 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
         }
 
-        public void ImportMarkdownDocument(MarkdownDocument document)
+        public MarkdownDocument MarkdownDocument
         {
-            _markdownContainer.ImportMarkdownDocument(document);
+            get => _markdownContainer.MarkdownDocument;
+            set => _markdownContainer.MarkdownDocument = value;
         }
     }
 
@@ -116,16 +117,26 @@ namespace osu.Framework.Markdown.Tests.Visual
         public MarkdownContainer()
         {
             Direction = FillDirection.Vertical;
-            Spacing = new OpenTK.Vector2(20, 20);
+            Spacing = new Vector2(20, 20);
             Margin = new MarginPadding(){Left = 20,Right = 20};
         }
 
-        public void ImportMarkdownDocument(MarkdownDocument document)
+        private MarkdownDocument _document;
+        public MarkdownDocument MarkdownDocument
         {
-            int rootLayerIndex = 0;
-            foreach (var component in document)
+            get => _document;
+            set
             {
-                AddMarkdownComponent(component,this,rootLayerIndex);
+                _document = value;
+                //clear all exist markdown object
+                this.Clear();
+
+                //start creating
+                int rootLayerIndex = 0;
+                foreach (var component in _document)
+                {
+                    AddMarkdownComponent(component,this,rootLayerIndex);
+                }
             }
         }
 
@@ -133,7 +144,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             if(markdownObject is HeadingBlock headingBlock)
             {
-                container.Add(new MarkdownHeading(headingBlock));
+                container.Add(new MarkdownHeadingBlock(headingBlock));
             }
             else if(markdownObject is LiteralInline literalInline)
             {
@@ -193,7 +204,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     /// <summary>
     /// NotExistMarkdown : 
-    /// shows the <see cref="IMarkdownObject"/> does not exist in drawable object
+    /// shows the <see cref="IMarkdownObject"/> does not implement in drawable object
     /// </summary>
     internal class NotExistMarkdown : SpriteText
     {
@@ -224,7 +235,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownFencedCodeBlock : Container
     {
-        private TextFlowContainer _textFlowContainer;
+        private readonly TextFlowContainer _textFlowContainer;
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
             AutoSizeAxes = Axes.Y;
@@ -248,7 +259,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
 
         private FencedCodeBlock _fencedCodeBlock;
-        public virtual FencedCodeBlock Style
+        public FencedCodeBlock Style
         {
             get => _fencedCodeBlock;
             set
@@ -284,7 +295,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
 
         private ListBlock _listBlock;
-        public virtual ListBlock Style
+        public ListBlock Style
         {
             get => _listBlock;
             set
@@ -336,11 +347,11 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// ###Heading3
     /// ###3Heading4
     /// </summary>
-    internal class MarkdownHeading : Container
+    internal class MarkdownHeadingBlock : Container
     {
         private TextFlowContainer _text;
 
-        public MarkdownHeading(HeadingBlock headingBlock)
+        public MarkdownHeadingBlock(HeadingBlock headingBlock)
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
@@ -348,7 +359,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
 
         private HeadingBlock _headingBlock;
-        public virtual HeadingBlock Style
+        public HeadingBlock Style
         {
             get => _headingBlock;
             set
@@ -422,7 +433,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
 
         private QuoteBlock _quoteBlock;
-        public virtual QuoteBlock Style
+        public QuoteBlock Style
         {
             get => _quoteBlock;
             set
