@@ -7,16 +7,18 @@ using System.Text;
 using Markdig;
 using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using Microsoft.CodeAnalysis.Text;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Testing;
 using osu.Framework.Graphics.Shapes;
-using Markdig.Syntax.Inlines;
 using osu.Framework.Graphics.Animations;
 using OpenTK;
 using OpenTK.Graphics;
+using osu.Framework.Graphics.Textures;
+using osu.Framework.Allocation;
 
 namespace osu.Framework.Markdown.Tests.Visual
 {
@@ -70,13 +72,9 @@ namespace osu.Framework.Markdown.Tests.Visual
                 RelativeSizeAxes = Axes.Both,
             };
             
-            /*
-             markdown= @"- [1. Blocks](#1-blocks)
-  - [1.1 Code block](#11-code-block)
-  - [1.2 Text block](#12-text-block)
-  - [1.3 Escape block](#13-escape-block)
-  - [1.4 Whitespace control](#14-whitespace-control)";
-             */
+            
+             markdown= @"![Drag Racing](https://www.wonderplugin.com/videos/demo-image0.jpg)";
+             
 
             container.MarkdownText = markdown;
             
@@ -149,7 +147,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 var markdownText = value;
                 var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub).Build();
-                MarkdownDocument = Markdown.Parse(markdownText, pipeline);
+                MarkdownDocument = Markdig.Markdown.Parse(markdownText, pipeline);
             }
         }
 
@@ -485,7 +483,8 @@ namespace osu.Framework.Markdown.Tests.Visual
                     }
                     else if (literalInline.Parent is LinkInline linkInline)
                     {
-                        textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
+                        if(!linkInline.IsImage)
+                            textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
                     }
                     else
                         textFlowContainer.AddText(text);
@@ -496,10 +495,25 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
                 else if (single is EmphasisInline emphasisInline)
                 {
+                    
                     //foreach (var child in emphasisInline)
                     //{
                     //    textFlowContainer.AddText(child.ToString());
                     //}
+                }
+                else if(single is LinkInline linkInline)
+                {
+                    if(linkInline.IsImage)
+                    {
+                        var imageUrl = linkInline.Url;
+                        var imageIndex = textFlowContainer.AddPlaceholder(new MarkdownImage(imageUrl)
+                        {
+                            Width = 300,
+                            Height = 300,
+                        });
+                        //TODO : insert a image
+                        textFlowContainer.AddText("[" + imageIndex + "]");
+                    }
                 }
                 else if (single is LinkInline || single is HtmlInline || single is HtmlEntityInline)
                 {
@@ -522,7 +536,41 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
     }
 
-    internal class MarkdownTextFlowContainer : TextFlowContainer
+    /// <summary>
+    /// Load image from url
+    /// </summary>
+    internal class MarkdownImage : Container
+    {
+        private readonly string _imageUrl;
+        
+        public MarkdownImage(string imageUrl)
+        {
+            _imageUrl = imageUrl;
+        }
+
+        [BackgroundDependencyLoader]
+        private void load(TextureStore textures)
+        {
+            Texture texture = null;
+            if (!string.IsNullOrEmpty(_imageUrl))
+                texture = textures.Get(_imageUrl);
+
+            //TODO : get default texture
+            //if (texture == null) 
+            //    texture = textures.Get(@"Online/avatar-guest");
+
+            Add(new Sprite
+            {
+                RelativeSizeAxes = Axes.Both,
+                Texture = texture,
+                FillMode = FillMode.Fit,
+                Anchor = Anchor.Centre,
+                Origin = Anchor.Centre
+            });
+        }
+    }
+
+    internal class MarkdownTextFlowContainer : CustomizableTextContainer
     {
         public MarkdownTextFlowContainer()
         {
