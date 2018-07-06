@@ -69,6 +69,14 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 RelativeSizeAxes = Axes.Both,
             };
+            
+            /*
+             markdown= @"- [1. Blocks](#1-blocks)
+  - [1.1 Code block](#11-code-block)
+  - [1.2 Text block](#12-text-block)
+  - [1.3 Escape block](#13-escape-block)
+  - [1.4 Whitespace control](#14-whitespace-control)";
+             */
 
             container.MarkdownText = markdown;
             
@@ -114,6 +122,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownContainer : FillFlowContainer
     {
+        private const int seperator_px = 25;
         public MarkdownDocument MarkdownDocument
         {
             get => _document;
@@ -125,7 +134,9 @@ namespace osu.Framework.Markdown.Tests.Visual
 
                 //start creating
                 const int root_layer_index = 0;
-                foreach (var component in _document) AddMarkdownComponent(component, this, root_layer_index);
+
+                foreach (var component in _document)
+                    AddMarkdownComponent(component, this, root_layer_index);
             }
         }
 
@@ -146,7 +157,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         public MarkdownContainer()
         {
             Direction = FillDirection.Vertical;
-            Spacing = new Vector2(20, 20);
+            Spacing = new Vector2(seperator_px);
             Margin = new MarginPadding { Left = 20, Right = 20 };
         }
 
@@ -162,54 +173,70 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
             else if (markdownObject is ParagraphBlock paragraphBlock)
             {
-                var drawableParagraphBlock = ParagraphBlockHelper.GenerateText(paragraphBlock);
-                drawableParagraphBlock.RelativeSizeAxes = Axes.X;
-                drawableParagraphBlock.AutoSizeAxes = Axes.Y;
+                var drawableParagraphBlock = new MarkdownTextFlowContainer();
+                switch(layerIndex)
+                {
+                    case 1:
+                        drawableParagraphBlock.AddText("@ ",t => t.Colour = Color4.DarkGray);
+                        break;
+                    case 2:
+                        drawableParagraphBlock.AddText("# ",t => t.Colour = Color4.DarkGray);
+                    break;
+                    case 3:
+                        drawableParagraphBlock.AddText("+ ",t => t.Colour = Color4.DarkGray);
+                    break;
+                    case 4:
+                        drawableParagraphBlock.AddText("+ ",t => t.Colour = Color4.DarkGray);
+                    break;
+                }
+
+                drawableParagraphBlock = ParagraphBlockHelper.GeneratePartial(drawableParagraphBlock, paragraphBlock.Inline);
                 container.Add(drawableParagraphBlock);
             }
             else if (markdownObject is QuoteBlock quoteBlock)
             {
                 container.Add(new MarkdownQuoteBlock(quoteBlock));
             }
-            else if (markdownObject is ListBlock listBlock)
-            {
-                container.Add(new MarkdownListBlock(listBlock));
-            }
             else if (markdownObject is FencedCodeBlock fencedCodeBlock)
             {
                 container.Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
+            }
+            else if (markdownObject is ListBlock listBlock)
+            {
+                var childContainer = new FillFlowContainer()
+                {
+                    Direction = FillDirection.Vertical,
+                    Spacing = new OpenTK.Vector2(10, 10),
+                    Margin = new MarginPadding() { Left = 25, Right = 10 },
+                    AutoSizeAxes = Axes.Y,
+                    RelativeSizeAxes = Axes.X,
+                };
+                container.Add(childContainer);
+                foreach (var single in listBlock)
+                {
+                    AddMarkdownComponent(single, childContainer, layerIndex + 1);
+                }
+            }
+            else if (markdownObject is ListItemBlock listItemBlock)
+            {
+                foreach (var single in listItemBlock)
+                {
+                    AddMarkdownComponent(single, container, layerIndex);
+                }
             }
             else
             {
                 container.Add(new NotExistMarkdown(markdownObject));
             }
-
-            //show child object
+    
+            //show seperator line
             if (markdownObject is LeafBlock leafBlock && !(markdownObject is ParagraphBlock))
             {
                 if (leafBlock.Inline != null)
                 {
-                    foreach (var single in leafBlock.Inline)
-                    {
-                        //TODO : if mant to insert markdown object recursive , use this instead.
-                        /*
-                        var childContainer = new FillFlowContainer()
-                        {
-                            Direction = FillDirection.Vertical,
-                            Spacing = new OpenTK.Vector2(10, 10),
-                            Margin = new MarginPadding(){Left = 20,Right = 20},
-                            AutoSizeAxes = Axes.Y,
-                            RelativeSizeAxes = Axes.X,
-                        };
-                        container.Add(childContainer);
-                        AddMarkdownComponent(single,childContainer,layerIndex + 1);
-                        */
-
-                        AddMarkdownComponent(single, container, layerIndex + 1);
-                    }  
+                    container.Add(new MarkdownSeperator(null));
                 }   
             }
-               
         }
     }
 
@@ -223,7 +250,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             Colour = new Color4(255, 0, 0, 255);
             TextSize = 21;
-            Text = markdownObject?.GetType() + "Does not be implemented";
+            Text = markdownObject?.GetType() + " Does not be implemented";
         }
     }
 
@@ -235,7 +262,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownFencedCodeBlock : Container
     {
-        private readonly TextFlowContainer _textFlowContainer;
+        private readonly MarkdownTextFlowContainer _textFlowContainer;
 
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
@@ -249,11 +276,9 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Colour = Color4.Gray,
                     Alpha = 0.5f
                 },
-                _textFlowContainer = new TextFlowContainer
+                _textFlowContainer = new MarkdownTextFlowContainer
                 {
                     Margin = new MarginPadding { Left = 10, Right = 10, Top = 10, Bottom = 10 },
-                    RelativeSizeAxes = Axes.X,
-                    AutoSizeAxes = Axes.Y
                 }
             };
 
@@ -300,10 +325,8 @@ namespace osu.Framework.Markdown.Tests.Visual
                     foreach (var block in listitemBlock)
                         if (block is ParagraphBlock paragraphBlock)
                         {
-                            var drawableParagraphBlock = new TextFlowContainer();
+                            var drawableParagraphBlock = new MarkdownTextFlowContainer();
                             drawableParagraphBlock.Margin = new MarginPadding { Left = 20 * layerIndex };
-                            drawableParagraphBlock.RelativeSizeAxes = Axes.X;
-                            drawableParagraphBlock.AutoSizeAxes = Axes.Y;
 
                             switch(layerIndex)
                             {
@@ -340,7 +363,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownHeadingBlock : Container
     {
-        private readonly TextFlowContainer _textFlowContainer;
+        private readonly MarkdownTextFlowContainer _textFlowContainer;
 
         public MarkdownHeadingBlock(HeadingBlock headingBlock)
         {
@@ -349,10 +372,9 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             Children = new Drawable[]
             {
-                _textFlowContainer = new TextFlowContainer
+                _textFlowContainer = new MarkdownTextFlowContainer
                 {
-                    RelativeSizeAxes = Axes.X,
-                    AutoSizeAxes = Axes.Y
+                    
                 }
             };
 
@@ -390,7 +412,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownQuoteBlock : Container
     {
-        private readonly TextFlowContainer _textFlowContainer;
+        private readonly MarkdownTextFlowContainer _textFlowContainer;
         private Box _quoteBox;
 
         public MarkdownQuoteBlock(QuoteBlock quoteBlock)
@@ -408,15 +430,14 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Origin = Anchor.CentreLeft,
                     RelativeSizeAxes = Axes.Y
                 },
-                _textFlowContainer = new TextFlowContainer
+                _textFlowContainer = new MarkdownTextFlowContainer
                 {
-                    RelativeSizeAxes = Axes.X,
-                    AutoSizeAxes = Axes.Y,
                     Margin = new MarginPadding { Left = 20 }
                 }
             };
 
-            if (quoteBlock.LastChild is ParagraphBlock paragraphBlock) _textFlowContainer = ParagraphBlockHelper.GeneratePartial(_textFlowContainer, paragraphBlock.Inline);
+            if (quoteBlock.LastChild is ParagraphBlock paragraphBlock) 
+                _textFlowContainer = ParagraphBlockHelper.GeneratePartial(_textFlowContainer, paragraphBlock.Inline);
         }
     }
 
@@ -439,14 +460,14 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal static class ParagraphBlockHelper
     {
-        public static TextFlowContainer GenerateText(ParagraphBlock paragraphBlock)
+        public static MarkdownTextFlowContainer GenerateText(ParagraphBlock paragraphBlock)
         {
-            var textFlowContainer = new TextFlowContainer();
+            var textFlowContainer = new MarkdownTextFlowContainer();
             GeneratePartial(textFlowContainer, paragraphBlock.Inline);
             return textFlowContainer;
         }
 
-        public static TextFlowContainer GeneratePartial(TextFlowContainer textFlowContainer, ContainerInline lnline)
+        public static MarkdownTextFlowContainer GeneratePartial(MarkdownTextFlowContainer textFlowContainer, ContainerInline lnline)
         {
             foreach (var single in lnline)
             {
@@ -466,12 +487,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                     {
                        textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue); 
                     }  
-                   
-
-                    //else if(literalInline.Parent is HeadingBlock headingBlock)
-                    //{
-                    //    
-                    //}
                     else
                         textFlowContainer.AddText(text);
                 }
