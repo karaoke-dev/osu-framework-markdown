@@ -441,8 +441,6 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
     }
 
-    #region MarkdownSeperator.cs
-
     /// <summary>
     /// MarkdownSeperator : 
     /// (spacing)
@@ -467,10 +465,6 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
     }
-
-    #endregion
-
-    #region ParagraphBlockHelper.cs
 
     /// <summary>
     /// Fill <see cref="Inline"/> into <see cref="TextFlowContainer"/>
@@ -546,8 +540,6 @@ namespace osu.Framework.Markdown.Tests.Visual
             return textFlowContainer;
         }
     }
-
-    #endregion
 
     /// <summary>
     /// List extension
