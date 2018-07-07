@@ -73,7 +73,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
             
             
-             markdown= @"![Drag Racing](https://www.wonderplugin.com/videos/demo-image0.jpg)";
+            markdown= @"![Drag Racing](https://www.wonderplugin.com/videos/demo-image0.jpg)";
              
 
             container.MarkdownText = markdown;
@@ -506,16 +506,15 @@ namespace osu.Framework.Markdown.Tests.Visual
                     if(linkInline.IsImage)
                     {
                         var imageUrl = linkInline.Url;
-                        var imageIndex = textFlowContainer.AddPlaceholder(new MarkdownImage(imageUrl)
+                        //insert a image
+                        textFlowContainer.AddImage(new MarkdownImage(imageUrl)
                         {
                             Width = 300,
                             Height = 300,
                         });
-                        //TODO : insert a image
-                        textFlowContainer.AddText("[" + imageIndex + "]");
                     }
                 }
-                else if (single is LinkInline || single is HtmlInline || single is HtmlEntityInline)
+                else if (single is HtmlInline || single is HtmlEntityInline)
                 {
                     //DO nothing
                 }
@@ -576,6 +575,24 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             RelativeSizeAxes = Axes.X;
             AutoSizeAxes = Axes.Y;
+        }
+
+        public IEnumerable<SpriteText> AddImage(MarkdownImage image)
+        {
+            var imageIndex = this.AddPlaceholder(image);
+            return base.AddText("[" + imageIndex + "]");
+        }
+
+        public new IEnumerable<SpriteText> AddText(string text, Action<SpriteText> creationParameters = null)
+        {
+            text = text.Replace("[", "[[").Replace("]", "]]");
+            return base.AddText(text, creationParameters);
+        }
+
+        public new IEnumerable<SpriteText> AddParagraph(string text, Action<SpriteText> creationParameters = null)
+        {
+            text = text.Replace("[", "[[").Replace("]", "]]");
+            return base.AddParagraph(text, creationParameters);
         }
     }
 
