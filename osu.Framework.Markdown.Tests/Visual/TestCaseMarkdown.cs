@@ -73,7 +73,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
             
             
-            markdown= @"![Drag Racing](https://www.wonderplugin.com/videos/demo-image0.jpg)";
+            //markdown= @"![Drag Racing](https://www.wonderplugin.com/videos/demo-image0.jpg)";
              
 
             container.MarkdownText = markdown;
@@ -84,30 +84,31 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    ///     MarkDownScrollContainer
+    /// Contains <see cref="MarkdownContainer"/> and make it scrollable
     /// </summary>
     public class MarkdownScrollContainer : ScrollContainer
     {
         public MarkdownDocument MarkdownDocument
         {
-            get => _markdownContainer.MarkdownDocument;
-            set => _markdownContainer.MarkdownDocument = value;
+            get => markdownContainer.MarkdownDocument;
+            set => markdownContainer.MarkdownDocument = value;
         }
 
         public string MarkdownText
         {
-            get => _markdownContainer.MarkdownText;
-            set => _markdownContainer.MarkdownText = value;
+            get => markdownContainer.MarkdownText;
+            set => markdownContainer.MarkdownText = value;
         }
 
-        private readonly MarkdownContainer _markdownContainer;
+        private readonly MarkdownContainer markdownContainer;
 
         public MarkdownScrollContainer()
         {
             ScrollbarOverlapsContent = false;
-            Child = _markdownContainer = new MarkdownContainer
+            Child =  markdownContainer = new MarkdownContainer
             {
-                Padding = new MarginPadding(3),
+                Padding = new MarginPadding{Left = 10, Right = 30},
+                Margin = new MarginPadding { Left = 10, Right = 30 },
                 AutoSizeAxes = Axes.Y,
                 RelativeSizeAxes = Axes.X
             };
@@ -115,8 +116,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    ///     MarkdownContainer
-    ///     Contains  all the markdown component <see cref="IMarkdownObject" /> in <see cref="MarkdownDocument" />
+    /// Contains all the markdown component <see cref="IMarkdownObject" /> in <see cref="MarkdownDocument" />
     /// </summary>
     public class MarkdownContainer : FillFlowContainer
     {
@@ -124,17 +124,17 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         public MarkdownDocument MarkdownDocument
         {
-            get => _document;
+            get => document;
             set
             {
-                _document = value;
+                document = value;
                 //clear all exist markdown object
                 Clear();
 
                 //start creating
                 const int root_layer_index = 0;
 
-                foreach (var component in _document)
+                foreach (var component in document)
                     AddMarkdownComponent(component, this, root_layer_index);
             }
         }
@@ -151,7 +151,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
 
-        private MarkdownDocument _document;
+        private MarkdownDocument document;
 
         public MarkdownContainer()
         {
@@ -182,8 +182,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                         drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
                         break;
                     case 3:
-                        drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
-                        break;
                     case 4:
                         drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
                         break;
@@ -206,7 +204,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 {
                     Direction = FillDirection.Vertical,
                     Spacing = new Vector2(10, 10),
-                    Margin = new MarginPadding() { Left = 25, Right = 10 },
+                    Padding = new MarginPadding() { Left = 25, Right = 5 },
                     AutoSizeAxes = Axes.Y,
                     RelativeSizeAxes = Axes.X,
                 };
@@ -225,7 +223,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
             else
             {
-                container.Add(new NotExistMarkdown(markdownObject));
+                container.Add(new NotExistingMarkdown(markdownObject));
             }
 
             //show seperator line
@@ -240,28 +238,28 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    ///     NotExistMarkdown :
-    ///     shows the <see cref="IMarkdownObject" /> does not implement in drawable object
+    /// NotExistMarkdown :
+    /// shows the <see cref="IMarkdownObject" /> does not implement in drawable object
     /// </summary>
-    internal class NotExistMarkdown : SpriteText
+    internal class NotExistingMarkdown : SpriteText
     {
-        public NotExistMarkdown(IMarkdownObject markdownObject)
+        public NotExistingMarkdown(IMarkdownObject markdownObject)
         {
             Colour = new Color4(255, 0, 0, 255);
             TextSize = 21;
-            Text = markdownObject?.GetType() + " Does not be implemented";
+            Text = markdownObject?.GetType() + " Not implemented.";
         }
     }
 
     /// <summary>
-    ///     MarkdownFencedCodeBlock :
-    ///     ```
-    ///     foo
-    ///     ```
+    /// MarkdownFencedCodeBlock :
+    /// ```
+    /// foo
+    /// ```
     /// </summary>
     internal class MarkdownFencedCodeBlock : Container
     {
-        private readonly MarkdownTextFlowContainer _textFlowContainer;
+        private readonly MarkdownTextFlowContainer textFlowContainer;
 
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
@@ -275,7 +273,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Colour = Color4.Gray,
                     Alpha = 0.5f
                 },
-                _textFlowContainer = new MarkdownTextFlowContainer
+                textFlowContainer = new MarkdownTextFlowContainer
                 {
                     Margin = new MarginPadding { Left = 10, Right = 10, Top = 10, Bottom = 10 },
                 }
@@ -285,84 +283,21 @@ namespace osu.Framework.Markdown.Tests.Visual
             foreach (var sligneLine in lines)
             {
                 var lineString = sligneLine.ToString();
-                _textFlowContainer.AddParagraph(lineString);
+                textFlowContainer.AddParagraph(lineString);
             }
         }
     }
 
     /// <summary>
-    ///     NotExistMarkdown :
-    ///     - [1. Blocks](#1-blocks)
-    ///     - [1.1 Code block](#11-code-block)
-    ///     - [1.2 Text block](#12-text-block)
-    ///     - [1.3 Escape block](#13-escape-block)
-    ///     - [1.4 Whitespace control](#14-whitespace-control)
-    /// </summary>
-    internal class MarkdownListBlock : FillFlowContainer
-    {
-        public MarkdownListBlock(ListBlock listBlock)
-        {
-            Direction = FillDirection.Vertical;
-            AutoSizeAxes = Axes.Y;
-            RelativeSizeAxes = Axes.X;
-
-            const int root_layer_index = 1;
-            createLayer(listBlock, root_layer_index);
-        }
-
-        private void createLayer(ListBlock listBlock, int layerIndex)
-        {
-            foreach (var singleBlock in listBlock)
-                //TODO : singleBlock has two child
-                //[0] : 1. Blocks
-                //[1] : 1.1 Code block
-                //      1.2 Text block
-                //      1.3 Escape block
-                //      1.4 Whitespace control
-
-                if (singleBlock is ListItemBlock listitemBlock)
-                    foreach (var block in listitemBlock)
-                        if (block is ParagraphBlock paragraphBlock)
-                        {
-                            var drawableParagraphBlock = new MarkdownTextFlowContainer();
-                            drawableParagraphBlock.Margin = new MarginPadding { Left = 20 * layerIndex };
-
-                            switch (layerIndex)
-                            {
-                                case 1:
-                                    drawableParagraphBlock.AddText("@ ", t => t.Colour = Color4.DarkGray);
-                                    break;
-                                case 2:
-                                    drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
-                                    break;
-                                case 3:
-                                    drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
-                                    break;
-                                case 4:
-                                    drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
-                                    break;
-                            }
-
-                            drawableParagraphBlock = ParagraphBlockHelper.GeneratePartial(drawableParagraphBlock, paragraphBlock.Inline);
-                            Add(drawableParagraphBlock);
-                        }
-                        else if (block is ListBlock listBlock2)
-                        {
-                            createLayer(listBlock2, layerIndex + 1);
-                        }
-        }
-    }
-
-    /// <summary>
-    ///     MarkdownHeading :
-    ///     #Heading1
-    ///     ##Heading2
-    ///     ###Heading3
-    ///     ###3Heading4
+    /// MarkdownHeading :
+    /// #Heading1
+    /// ##Heading2
+    /// ###Heading3
+    /// ###3Heading4
     /// </summary>
     internal class MarkdownHeadingBlock : Container
     {
-        private readonly MarkdownTextFlowContainer _textFlowContainer;
+        private readonly MarkdownTextFlowContainer textFlowContainer;
 
         public MarkdownHeadingBlock(HeadingBlock headingBlock)
         {
@@ -371,9 +306,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             Children = new Drawable[]
             {
-                _textFlowContainer = new MarkdownTextFlowContainer
-                {
-                }
+                textFlowContainer = new MarkdownTextFlowContainer()
             };
 
             var level = headingBlock.Level;
@@ -393,25 +326,21 @@ namespace osu.Framework.Markdown.Tests.Visual
                 case 4:
                     scale = new Vector2(1.3f);
                     break;
-                case 5:
-                    scale = new Vector2(1);
-                    break;
             }
 
-            _textFlowContainer.Scale = scale;
-            _textFlowContainer = ParagraphBlockHelper.GeneratePartial(_textFlowContainer, headingBlock.Inline);
+            textFlowContainer.Scale = scale;
+            textFlowContainer = ParagraphBlockHelper.GeneratePartial(textFlowContainer, headingBlock.Inline);
         }
     }
 
     /// <summary>
-    ///     MarkdownQuoteBlock :
-    ///     > NOTE: This document does not describe the `liquid` language. Check the [`liquid
-    ///     website`](https://shopify.github.io/liquid/) directly.
+    /// MarkdownQuoteBlock :
+    /// > NOTE: This document does not describe the `liquid` language.
     /// </summary>
     internal class MarkdownQuoteBlock : Container
     {
-        private readonly MarkdownTextFlowContainer _textFlowContainer;
-        private Box _quoteBox;
+        private readonly MarkdownTextFlowContainer textFlowContainer;
+        private Box quoteBox;
 
         public MarkdownQuoteBlock(QuoteBlock quoteBlock)
         {
@@ -420,7 +349,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             Children = new Drawable[]
             {
-                _quoteBox = new Box
+                quoteBox = new Box
                 {
                     Colour = Color4.Gray,
                     Width = 5,
@@ -428,20 +357,20 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Origin = Anchor.CentreLeft,
                     RelativeSizeAxes = Axes.Y
                 },
-                _textFlowContainer = new MarkdownTextFlowContainer
+                textFlowContainer = new MarkdownTextFlowContainer
                 {
                     Margin = new MarginPadding { Left = 20 }
                 }
             };
 
             if (quoteBlock.LastChild is ParagraphBlock paragraphBlock)
-                _textFlowContainer = ParagraphBlockHelper.GeneratePartial(_textFlowContainer, paragraphBlock.Inline);
+                textFlowContainer = ParagraphBlockHelper.GeneratePartial(textFlowContainer, paragraphBlock.Inline);
         }
     }
 
     /// <summary>
-    ///     MarkdownSeperator :
-    ///     (spacing)
+    /// MarkdownSeperator :
+    /// (spacing)
     /// </summary>
     internal class MarkdownSeperator : Box
     {
@@ -454,7 +383,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    ///     Fill <see cref="Inline" /> into <see cref="TextFlowContainer" />
+    /// Fill <see cref="Inline" /> into <see cref="TextFlowContainer" />
     /// </summary>
     internal static class ParagraphBlockHelper
     {
@@ -474,16 +403,12 @@ namespace osu.Framework.Markdown.Tests.Visual
                     var text = literalInline.Content.ToString();
                     if (lnline.GetNext(literalInline) is HtmlInline
                         && lnline.GetPrevious(literalInline) is HtmlInline htmlInline)
-                    {
                         textFlowContainer.AddText(text, t => t.Colour = Color4.MediumPurple);
-                    }
                     else if (lnline.GetNext(literalInline) is HtmlEntityInline htmlEntityInline)
-                    {
                         textFlowContainer.AddText(text, t => t.Colour = Color4.GreenYellow);
-                    }
                     else if (literalInline.Parent is LinkInline linkInline)
                     {
-                        if(!linkInline.IsImage)
+                        if (!linkInline.IsImage)
                             textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
                     }
                     else
@@ -495,15 +420,14 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
                 else if (single is EmphasisInline emphasisInline)
                 {
-                    
                     //foreach (var child in emphasisInline)
                     //{
                     //    textFlowContainer.AddText(child.ToString());
                     //}
                 }
-                else if(single is LinkInline linkInline)
+                else if (single is LinkInline linkInline)
                 {
-                    if(linkInline.IsImage)
+                    if (linkInline.IsImage)
                     {
                         var imageUrl = linkInline.Url;
                         //insert a image
@@ -524,7 +448,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
                 else
                 {
-                    textFlowContainer.AddText(single.GetType().ToString(), t => t.Colour = Color4.Red);
+                    textFlowContainer.AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
                 }
 
                 //generate child
@@ -540,22 +464,22 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownImage : Container
     {
-        private readonly string _imageUrl;
-        
-        public MarkdownImage(string imageUrl)
+        private readonly string imageUrl;
+
+        public MarkdownImage(string url)
         {
-            _imageUrl = imageUrl;
+            imageUrl = url;
         }
 
         [BackgroundDependencyLoader]
         private void load(TextureStore textures)
         {
             Texture texture = null;
-            if (!string.IsNullOrEmpty(_imageUrl))
-                texture = textures.Get(_imageUrl);
+            if (!string.IsNullOrEmpty(imageUrl))
+                texture = textures.Get(imageUrl);
 
             //TODO : get default texture
-            //if (texture == null) 
+            //if (texture == null)
             //    texture = textures.Get(@"Online/avatar-guest");
 
             Add(new Sprite
@@ -569,6 +493,9 @@ namespace osu.Framework.Markdown.Tests.Visual
         }
     }
 
+    /// <summary>
+    /// Markdown text flow container.
+    /// </summary>
     internal class MarkdownTextFlowContainer : CustomizableTextContainer
     {
         public MarkdownTextFlowContainer()
@@ -579,7 +506,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         public IEnumerable<SpriteText> AddImage(MarkdownImage image)
         {
-            var imageIndex = this.AddPlaceholder(image);
+            var imageIndex = AddPlaceholder(image);
             return base.AddText("[" + imageIndex + "]");
         }
 
