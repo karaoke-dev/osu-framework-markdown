@@ -132,7 +132,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 //clear all exist markdown object and re-create them
                 markdownContainer.Clear();
                 foreach (var component in document)
-                    AddMarkdownComponent(component, markdownContainer, RootLayerIndex);
+                    AddMarkdownComponent(component, markdownContainer, root_layer_index);
             }
         }
 
@@ -146,90 +146,86 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
 
-        private const int RootLayerIndex = 0;
-        private const int SeperatorPx = 25;
+        private const int root_layer_index = 0;
+        private const int seperator_px = 25;
         private MarkdownDocument document;
         private readonly FillFlowContainer markdownContainer;
 
         public MarkdownContainer()
         {
             ScrollbarOverlapsContent = false;
-            Child =  markdownContainer = new FillFlowContainer
+            Child = markdownContainer = new FillFlowContainer
             {
-                Padding = new MarginPadding{Left = 10, Right = 30},
+                Padding = new MarginPadding { Left = 10, Right = 30 },
                 Margin = new MarginPadding { Left = 10, Right = 30 },
                 AutoSizeAxes = Axes.Y,
                 RelativeSizeAxes = Axes.X,
                 Direction = FillDirection.Vertical,
-                Spacing = new Vector2(SeperatorPx)
+                Spacing = new Vector2(seperator_px)
             };
         }
 
         protected void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
         {
-            if (markdownObject is HeadingBlock headingBlock)
+            switch (markdownObject)
             {
-                container.Add(new MarkdownHeading(headingBlock));
-            }
-            else if (markdownObject is LiteralInline literalInline)
-            {
-                container.Add(new MarkdownSeperator(literalInline));
-            }
-            else if (markdownObject is ParagraphBlock paragraphBlock)
-            {
-                var drawableParagraphBlock = new MarkdownTextFlowContainer();
-                switch (layerIndex)
-                {
-                    case 1:
-                        drawableParagraphBlock.AddText("@ ", t => t.Colour = Color4.DarkGray);
-                        break;
-                    case 2:
-                        drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
-                        break;
-                    case 3:
-                    case 4:
-                        drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
-                        break;
-                }
+                case HeadingBlock headingBlock:
+                    container.Add(new MarkdownHeading(headingBlock));
+                    break;
+                case LiteralInline literalInline:
+                    container.Add(new MarkdownSeperator(literalInline));
+                    break;
+                case ParagraphBlock paragraphBlock:
+                    var drawableParagraphBlock = new MarkdownTextFlowContainer();
+                    switch (layerIndex)
+                    {
+                        case 1:
+                            drawableParagraphBlock.AddText("@ ", t => t.Colour = Color4.DarkGray);
+                            break;
+                        case 2:
+                            drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
+                            break;
+                        case 3:
+                        case 4:
+                            drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
+                            break;
+                    }
 
-                drawableParagraphBlock = ParagraphBlockHelper.GeneratePartial(drawableParagraphBlock, paragraphBlock.Inline);
-                container.Add(drawableParagraphBlock);
+                    drawableParagraphBlock = ParagraphBlockHelper.GeneratePartial(drawableParagraphBlock, paragraphBlock.Inline);
+                    container.Add(drawableParagraphBlock);
+                    break;
+                case QuoteBlock quoteBlock:
+                    container.Add(new MarkdownQuoteBlock(quoteBlock));
+                    break;
+                case FencedCodeBlock fencedCodeBlock:
+                    container.Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
+                    break;
+                case ListBlock listBlock:
+                    var childContainer = new FillFlowContainer()
+                    {
+                        Direction = FillDirection.Vertical,
+                        Spacing = new Vector2(10, 10),
+                        Padding = new MarginPadding() { Left = 25, Right = 5 },
+                        AutoSizeAxes = Axes.Y,
+                        RelativeSizeAxes = Axes.X,
+                    };
+                    container.Add(childContainer);
+                    foreach (var single in listBlock)
+                    {
+                        AddMarkdownComponent(single, childContainer, layerIndex + 1);
+                    }
+                    break;
+                case ListItemBlock listItemBlock:
+                    foreach (var single in listItemBlock)
+                    {
+                        AddMarkdownComponent(single, container, layerIndex);
+                    }
+                    break;
+                default:
+                    container.Add(new NotExistingMarkdown(markdownObject));
+                    break;
             }
-            else if (markdownObject is QuoteBlock quoteBlock)
-            {
-                container.Add(new MarkdownQuoteBlock(quoteBlock));
-            }
-            else if (markdownObject is FencedCodeBlock fencedCodeBlock)
-            {
-                container.Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
-            }
-            else if (markdownObject is ListBlock listBlock)
-            {
-                var childContainer = new FillFlowContainer()
-                {
-                    Direction = FillDirection.Vertical,
-                    Spacing = new Vector2(10, 10),
-                    Padding = new MarginPadding() { Left = 25, Right = 5 },
-                    AutoSizeAxes = Axes.Y,
-                    RelativeSizeAxes = Axes.X,
-                };
-                container.Add(childContainer);
-                foreach (var single in listBlock)
-                {
-                    AddMarkdownComponent(single, childContainer, layerIndex + 1);
-                }
-            }
-            else if (markdownObject is ListItemBlock listItemBlock)
-            {
-                foreach (var single in listItemBlock)
-                {
-                    AddMarkdownComponent(single, container, layerIndex);
-                }
-            }
-            else
-            {
-                container.Add(new NotExistingMarkdown(markdownObject));
-            }
+
 
             //show seperator line
             if (markdownObject is LeafBlock leafBlock && !(markdownObject is ParagraphBlock))
