@@ -27,8 +27,8 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         public TestCaseMarkdown()
         {
-            MarkdownScrollContainer markdownContainer;
-            Add(markdownContainer = new MarkdownScrollContainer()
+            MarkdownContainer markdownContainer;
+            Add(markdownContainer = new MarkdownContainer
             {
                 RelativeSizeAxes = Axes.Both,
             });
@@ -119,65 +119,25 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    /// Contains <see cref="MarkdownContainer"/> and make it scrollable
-    /// </summary>
-    public class MarkdownScrollContainer : ScrollContainer
-    {
-        public MarkdownDocument MarkdownDocument
-        {
-            get => markdownContainer.MarkdownDocument;
-            set => markdownContainer.MarkdownDocument = value;
-        }
-
-        public string MarkdownText
-        {
-            get => markdownContainer.MarkdownText;
-            set => markdownContainer.MarkdownText = value;
-        }
-
-        private readonly MarkdownContainer markdownContainer;
-
-        public MarkdownScrollContainer()
-        {
-            ScrollbarOverlapsContent = false;
-            Child =  markdownContainer = new MarkdownContainer
-            {
-                Padding = new MarginPadding{Left = 10, Right = 30},
-                Margin = new MarginPadding { Left = 10, Right = 30 },
-                AutoSizeAxes = Axes.Y,
-                RelativeSizeAxes = Axes.X
-            };
-        }
-    }
-
-    /// <summary>
     /// Contains all the markdown component <see cref="IMarkdownObject" /> in <see cref="MarkdownDocument" />
     /// </summary>
-    public class MarkdownContainer : FillFlowContainer
+    public class MarkdownContainer : ScrollContainer
     {
-        private const int seperator_px = 25;
-
         public MarkdownDocument MarkdownDocument
         {
             get => document;
             set
             {
                 document = value;
-                //clear all exist markdown object
-                Clear();
-
-                //start creating
-                const int root_layer_index = 0;
-
+                //clear all exist markdown object and re-create them
+                markdownContainer.Clear();
                 foreach (var component in document)
-                    AddMarkdownComponent(component, this, root_layer_index);
+                    AddMarkdownComponent(component, markdownContainer, RootLayerIndex);
             }
         }
 
         public string MarkdownText
         {
-            //TODO : get value from MarkdownDocument
-            get => "";
             set
             {
                 var markdownText = value;
@@ -186,16 +146,26 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
 
+        private const int RootLayerIndex = 0;
+        private const int SeperatorPx = 25;
         private MarkdownDocument document;
+        private readonly FillFlowContainer markdownContainer;
 
         public MarkdownContainer()
         {
-            Direction = FillDirection.Vertical;
-            Spacing = new Vector2(seperator_px);
-            Margin = new MarginPadding { Left = 20, Right = 20 };
+            ScrollbarOverlapsContent = false;
+            Child =  markdownContainer = new FillFlowContainer
+            {
+                Padding = new MarginPadding{Left = 10, Right = 30},
+                Margin = new MarginPadding { Left = 10, Right = 30 },
+                AutoSizeAxes = Axes.Y,
+                RelativeSizeAxes = Axes.X,
+                Direction = FillDirection.Vertical,
+                Spacing = new Vector2(SeperatorPx)
+            };
         }
 
-        public void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
+        protected void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
         {
             if (markdownObject is HeadingBlock headingBlock)
             {
