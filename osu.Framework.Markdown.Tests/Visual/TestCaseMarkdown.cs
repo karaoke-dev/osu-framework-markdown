@@ -91,6 +91,19 @@ namespace osu.Framework.Markdown.Tests.Visual
                     @"The greedy mode using the character - (e.g {{- or -}}), removes any whitespace, including newlines Examples with the variable name = ""foo"":";
             });
 
+            AddStep("Markdown Table", () =>
+            {
+                markdownContainer.MarkdownText =
+                    @"|Operator            | Description
+|--------------------|------------
+| `<left> + <right>` | add left to right number 
+| `<left> - <right>` | substract right number from left
+| `<left> * <right>` | multiply left by right number
+| `<left> / <right>` | divide left by right number
+| `<left> // <right>`| divide left by right number and round to an integer
+| `<left> % <right>` | calculates the modulus of left by right ";
+            });
+
             AddStep("MarkdownImage", () =>
             {
                 markdownContainer.MarkdownText = @"![Drag Racing](https://www.wonderplugin.com/videos/demo-image0.jpg)
@@ -141,7 +154,10 @@ namespace osu.Framework.Markdown.Tests.Visual
             set
             {
                 var markdownText = value;
-                var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub).Build();
+                var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub)
+                    .UseEmojiAndSmiley()
+                    .UseSmartyPants()
+                    .UseAdvancedExtensions().Build();
                 MarkdownDocument = Markdig.Markdown.Parse(markdownText, pipeline);
             }
         }
@@ -260,7 +276,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownFencedCodeBlock : Container
     {
-        private readonly MarkdownTextFlowContainer textFlowContainer;
+        private readonly TextFlowContainer textFlowContainer;
 
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
@@ -274,9 +290,11 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Colour = Color4.Gray,
                     Alpha = 0.5f
                 },
-                textFlowContainer = new MarkdownTextFlowContainer
+                textFlowContainer = new TextFlowContainer
                 {
-                    Margin = new MarginPadding { Left = 10, Right = 10, Top = 10, Bottom = 10 },
+                    RelativeSizeAxes = Axes.X,
+                    AutoSizeAxes = Axes.Y,
+                    Margin = new MarginPadding { Left = 10, Right = 10, Top = 10, Bottom = 10 }
                 }
             };
 
@@ -399,61 +417,60 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             foreach (var single in lnline)
             {
-                if (single is LiteralInline literalInline)
+                switch (single)
                 {
-                    var text = literalInline.Content.ToString();
-                    if (lnline.GetNext(literalInline) is HtmlInline
-                        && lnline.GetPrevious(literalInline) is HtmlInline htmlInline)
-                        textFlowContainer.AddText(text, t => t.Colour = Color4.MediumPurple);
-                    else if (lnline.GetNext(literalInline) is HtmlEntityInline htmlEntityInline)
-                        textFlowContainer.AddText(text, t => t.Colour = Color4.GreenYellow);
-                    else if (literalInline.Parent is LinkInline linkInline)
-                    {
-                        if (!linkInline.IsImage)
-                            textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
-                    }
-                    else
-                        textFlowContainer.AddText(text);
-                }
-                else if (single is CodeInline codeInline)
-                {
-                    textFlowContainer.AddText(codeInline.Content, t => t.Colour = Color4.Orange);
-                }
-                else if (single is EmphasisInline emphasisInline)
-                {
-                    //foreach (var child in emphasisInline)
-                    //{
-                    //    textFlowContainer.AddText(child.ToString());
-                    //}
-                }
-                else if (single is LinkInline linkInline)
-                {
-                    if (linkInline.IsImage)
-                    {
-                        var imageUrl = linkInline.Url;
-                        //insert a image
-                        textFlowContainer.AddImage(new MarkdownImage(imageUrl)
+                    case LiteralInline literalInline:
+                        var text = literalInline.Content.ToString();
+                        if (lnline.GetNext(literalInline) is HtmlInline
+                            && lnline.GetPrevious(literalInline) is HtmlInline htmlInline)
+                            textFlowContainer.AddText(text, t => t.Colour = Color4.MediumPurple);
+                        else if (lnline.GetNext(literalInline) is HtmlEntityInline htmlEntityInline)
+                            textFlowContainer.AddText(text, t => t.Colour = Color4.GreenYellow);
+                        else if (literalInline.Parent is LinkInline linkInline)
                         {
-                            Width = 300,
-                            Height = 300,
-                        });
-                    }
-                }
-                else if (single is HtmlInline || single is HtmlEntityInline)
-                {
-                    //DO nothing
-                }
-                else if (single is LineBreakInline)
-                {
-                    //IDK what is this but just ignore
-                }
-                else
-                {
-                    textFlowContainer.AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
+                            if (!linkInline.IsImage)
+                                textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
+                        }
+                        else
+                            textFlowContainer.AddText(text);
+                        break;
+                    case CodeInline codeInline:
+                        textFlowContainer.AddText(codeInline.Content, t => t.Colour = Color4.Orange);
+                        break;
+                    case EmphasisInline emphasisInline:
+                        //foreach (var child in emphasisInline)
+                        //{
+                        //    textFlowContainer.AddText(child.ToString());
+                        //}
+                        break;
+                    case LinkInline linkInline:
+                        if (linkInline.IsImage)
+                        {
+                            var imageUrl = linkInline.Url;
+                            //insert a image
+                            textFlowContainer.AddImage(new MarkdownImage(imageUrl)
+                            {
+                                Width = 300,
+                                Height = 300,
+                            });
+                        }
+                        break;
+                    case HtmlInline html:
+                    case HtmlEntityInline htmlEntityInline:
+                        //DO nothing
+                        break;
+                    case LineBreakInline lineBreakInline:
+                        //IDK what is this but just ignore
+                        break;
+                        default:
+                            textFlowContainer.AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
+                        break;
+
                 }
 
                 //generate child
-                if (single is ContainerInline containerInline) GeneratePartial(textFlowContainer, containerInline);
+                if (single is ContainerInline containerInline)
+                    GeneratePartial(textFlowContainer, containerInline);
             }
 
             return textFlowContainer;
