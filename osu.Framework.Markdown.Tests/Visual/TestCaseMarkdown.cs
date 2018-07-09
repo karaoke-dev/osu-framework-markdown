@@ -284,52 +284,97 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         public MarkdownTable(Table table)
         {
+            //AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
+            //Height = 650;
 
             List<List<Container>> listContainerArray = new List<List<Container>>();
             foreach(TableRow tableRow in table)
             {
                 List<Container> rows = new List<Container>();
+
                 if(tableRow!=null)
                     foreach(TableCell tableCell in tableRow)
                     {
                         if(tableCell!=null)
-                            foreach(ParagraphBlock single in tableCell)
-                            {
-                                var paragraphText = ParagraphBlockHelper.GenerateText(single);
-                                paragraphText.Margin = new MarginPadding{Left = 2,Right = 2,Top = 2,Bottom = 2};
-
-                                rows.Add(new Container
-                                {
-                                    AutoSizeAxes = Axes.Y,
-                                    RelativeSizeAxes = Axes.X,
-                                    BorderThickness = 1.8f,
-                                    BorderColour = Color4.White,
-                                    Masking = true,
-                                    Children = new Drawable[]
-                                    {
-                                        new Box
-                                        {
-                                            RelativeSizeAxes = Axes.Both,
-                                            Colour = listContainerArray.Count % 2 == 0 ? Color4.White : Color4.LightGray,
-                                            Alpha = 0.3f
-                                        },
-                                        paragraphText
-                                    }
-                                });
-                            }
+                            rows.Add(new MarkdownTableCell(tableCell,listContainerArray.Count));
                     }
+
                 listContainerArray.Add(rows);
             }
             this.Content = listContainerArray.Select(X=>X.ToArray()).ToArray();
 
             
+            //define max row is 50
+            this.RowDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 30).ToArray();
+            
+            int row = listContainerArray.FirstOrDefault()?.Count ?? 0;
+
+
+            //define max row is 10
+            //this.ColumnDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 10).ToArray();
         }
 
         [BackgroundDependencyLoader]
         private void load()
         {
+            //Width = Content.Sum(X=>X.Max(Y=>Y.DrawWidth));
             Height = Content.Sum(X=>X.Max(Y=>Y.DrawHeight));
+        }
+
+        protected override void Update()
+        {
+            Height = Content.Sum(X=>X.Max(Y=>Y.DrawHeight));
+            base.Update();
+        }
+
+        protected class MarkdownTableCell : Container
+        {
+            MarkdownTextFlowContainer textFlowContainer;
+
+            public MarkdownTableCell(TableCell cell,int rowNumber)
+            {
+                AutoSizeAxes = Axes.Y;
+                RelativeSizeAxes = Axes.X;
+                BorderThickness = 1.8f;
+                BorderColour = Color4.White;
+                Masking = true;
+
+                var backgroundColor = rowNumber % 2 != 0 ? Color4.White : Color4.LightGray;
+                var backgroundAlpha = 0.3f;
+                if(rowNumber==0)
+                {
+                    backgroundColor = Color4.White;
+                    backgroundAlpha = 0.4f;
+                }
+                
+                Children = new Drawable[]
+                {
+                    new Box
+                    {
+                        RelativeSizeAxes = Axes.Both,
+                        Colour = backgroundColor,
+                        Alpha = backgroundAlpha
+                    },
+                    textFlowContainer = new MarkdownTextFlowContainer
+                    {
+                        Margin = new MarginPadding{Left = 2,Right = 2,Top = 2,Bottom = 2}
+                    }
+                };
+
+                foreach(ParagraphBlock single in cell)
+                {
+                    ParagraphBlockHelper.GeneratePartial(textFlowContainer,single.Inline);
+                }
+            }
+
+            [BackgroundDependencyLoader]
+            private void load()
+            {
+                //Width = textFlowContainer.DrawWidth;
+                //Height = textFlowContainer.DrawHeight;
+            }
+
         }
     }
 
