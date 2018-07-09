@@ -188,9 +188,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                 case HeadingBlock headingBlock:
                     container.Add(new MarkdownHeading(headingBlock));
                     break;
-                case LiteralInline literalInline:
-                    container.Add(new MarkdownSeperator(literalInline));
-                    break;
                 case ParagraphBlock paragraphBlock:
                     var drawableParagraphBlock = new MarkdownTextFlowContainer();
                     switch (layerIndex)
@@ -217,11 +214,11 @@ namespace osu.Framework.Markdown.Tests.Visual
                     container.Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
                     break;
                 case ListBlock listBlock:
-                    var childContainer = new FillFlowContainer()
+                    var childContainer = new FillFlowContainer
                     {
                         Direction = FillDirection.Vertical,
                         Spacing = new Vector2(10, 10),
-                        Padding = new MarginPadding() { Left = 25, Right = 5 },
+                        Padding = new MarginPadding { Left = 25, Right = 5 },
                         AutoSizeAxes = Axes.Y,
                         RelativeSizeAxes = Axes.X,
                     };
@@ -248,7 +245,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 if (leafBlock.Inline != null)
                 {
-                    container.Add(new MarkdownSeperator(null));
+                    container.Add(new MarkdownSeperator());
                 }
             }
         }
@@ -276,12 +273,12 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownFencedCodeBlock : Container
     {
-        private readonly TextFlowContainer textFlowContainer;
-
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
+
+            TextFlowContainer textFlowContainer;
             Children = new Drawable[]
             {
                 new Box
@@ -316,12 +313,12 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownHeading : Container
     {
-        private readonly MarkdownTextFlowContainer textFlowContainer;
-
         public MarkdownHeading(HeadingBlock headingBlock)
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
+
+            MarkdownTextFlowContainer textFlowContainer;
 
             Children = new Drawable[]
             {
@@ -348,7 +345,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
 
             textFlowContainer.Scale = scale;
-            textFlowContainer = ParagraphBlockHelper.GeneratePartial(textFlowContainer, headingBlock.Inline);
+            ParagraphBlockHelper.GeneratePartial(textFlowContainer, headingBlock.Inline);
         }
     }
 
@@ -358,17 +355,16 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownQuoteBlock : Container
     {
-        private readonly MarkdownTextFlowContainer textFlowContainer;
-        private Box quoteBox;
-
         public MarkdownQuoteBlock(QuoteBlock quoteBlock)
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
 
+            MarkdownTextFlowContainer textFlowContainer;
+
             Children = new Drawable[]
             {
-                quoteBox = new Box
+                new Box
                 {
                     Colour = Color4.Gray,
                     Width = 5,
@@ -383,7 +379,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             if (quoteBlock.LastChild is ParagraphBlock paragraphBlock)
-                textFlowContainer = ParagraphBlockHelper.GeneratePartial(textFlowContainer, paragraphBlock.Inline);
+                ParagraphBlockHelper.GeneratePartial(textFlowContainer, paragraphBlock.Inline);
         }
     }
 
@@ -393,7 +389,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownSeperator : Box
     {
-        public MarkdownSeperator(LiteralInline literalInline)
+        public MarkdownSeperator()
         {
             RelativeSizeAxes = Axes.X;
             Height = 1;
