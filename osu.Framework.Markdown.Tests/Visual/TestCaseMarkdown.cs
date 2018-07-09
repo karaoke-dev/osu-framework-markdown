@@ -39,12 +39,8 @@ namespace osu.Framework.Markdown.Tests.Visual
                 markdownContainer.MarkdownText =
                     @"|Operator            | Description
 |--------------------|------------
-| `<left> + <right>` | add left to right number 
-| `<left> - <right>` | substract right number from left
-| `<left> * <right>` | multiply left by right number
-| `<left> / <right>` | divide left by right number
-| `<left> // <right>`| divide left by right number and round to an integer
-| `<left> % <right>` | calculates the modulus of left by right ";
+| `'left' + <right>` | concatenates left to right string: `""ab"" + ""c"" -> ""abc""`
+| `'left' * <right>` | concatenates the left string `right` times: `'a' * 5  -> aaaaa`. left and right and be swapped as long as there is one string and one number.";
             });
 
             AddStep("Markdown Heading", () =>
@@ -280,13 +276,14 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// | `<left> // <right>`| divide left by right number and round to an integer
     /// | `<left> % <right>` | calculates the modulus of left by right
     /// </summary>
-    internal class MarkdownTable : GridContainer
+    internal class MarkdownTable : Container
     {
+        private MarkdownTableContainer tableContainer;
         public MarkdownTable(Table table)
         {
-            //AutoSizeAxes = Axes.Y;
+            AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
-            //Height = 650;
+            Padding = new MarginPadding{Right = 100};
 
             List<List<Container>> listContainerArray = new List<List<Container>>();
             foreach(TableRow tableRow in table)
@@ -302,33 +299,46 @@ namespace osu.Framework.Markdown.Tests.Visual
 
                 listContainerArray.Add(rows);
             }
-            this.Content = listContainerArray.Select(X=>X.ToArray()).ToArray();
 
-            
+            this.Children = new Drawable[]
+            {
+                tableContainer = new MarkdownTableContainer
+                {
+                    AutoSizeAxes = Axes.Y,
+                    RelativeSizeAxes = Axes.X,
+                    Content = listContainerArray.Select(X=>X.ToArray()).ToArray(),
+                }
+            };
+
             //define max row is 50
-            this.RowDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 30).ToArray();
+            tableContainer.RowDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 30).ToArray();
             
             int row = listContainerArray.FirstOrDefault()?.Count ?? 0;
 
-
-            //define max row is 10
-            //this.ColumnDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 10).ToArray();
-        }
-
-        [BackgroundDependencyLoader]
-        private void load()
-        {
-            //Width = Content.Sum(X=>X.Max(Y=>Y.DrawWidth));
-            Height = Content.Sum(X=>X.Max(Y=>Y.DrawHeight));
+            if (row == 2)
+            {
+                tableContainer.ColumnDimensions = new[] { new Dimension(GridSizeMode.Relative, 0.3f) };
+            }
         }
 
         protected override void Update()
         {
-            Height = Content.Sum(X=>X.Max(Y=>Y.DrawHeight));
+            tableContainer.RowDimensions = tableContainer.Content.Select(X=>new Dimension(GridSizeMode.Absolute,X.Max(Y=>Y.DrawHeight))).ToArray();
+            //Height = Content.Sum(X=>X.Max(Y=>Y.DrawHeight));
             base.Update();
         }
 
-        protected class MarkdownTableCell : Container
+
+        private class MarkdownTableContainer : GridContainer
+        {
+            public new Axes AutoSizeAxes
+            {
+                get => base.AutoSizeAxes;
+                set => base.AutoSizeAxes = value;
+            }
+        }
+
+        private class MarkdownTableCell : Container
         {
             MarkdownTextFlowContainer textFlowContainer;
 
@@ -358,7 +368,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                     },
                     textFlowContainer = new MarkdownTextFlowContainer
                     {
-                        Margin = new MarginPadding{Left = 2,Right = 2,Top = 2,Bottom = 2}
+                        Margin = new MarginPadding{Left = 5,Right = 5,Top = 5,Bottom = 5}
                     }
                 };
 
