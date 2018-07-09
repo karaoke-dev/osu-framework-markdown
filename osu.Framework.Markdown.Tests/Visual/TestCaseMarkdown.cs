@@ -8,6 +8,7 @@ using Markdig;
 using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Markdig.Extensions.Tables;
 using Microsoft.CodeAnalysis.Text;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
@@ -31,6 +32,19 @@ namespace osu.Framework.Markdown.Tests.Visual
             Add(markdownContainer = new MarkdownContainer
             {
                 RelativeSizeAxes = Axes.Both,
+            });
+
+            AddStep("Markdown Table", () =>
+            {
+                markdownContainer.MarkdownText =
+                    @"|Operator            | Description
+|--------------------|------------
+| `<left> + <right>` | add left to right number 
+| `<left> - <right>` | substract right number from left
+| `<left> * <right>` | multiply left by right number
+| `<left> / <right>` | divide left by right number
+| `<left> // <right>`| divide left by right number and round to an integer
+| `<left> % <right>` | calculates the modulus of left by right ";
             });
 
             AddStep("Markdown Heading", () =>
@@ -89,19 +103,6 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 markdownContainer.MarkdownText =
                     @"The greedy mode using the character - (e.g {{- or -}}), removes any whitespace, including newlines Examples with the variable name = ""foo"":";
-            });
-
-            AddStep("Markdown Table", () =>
-            {
-                markdownContainer.MarkdownText =
-                    @"|Operator            | Description
-|--------------------|------------
-| `<left> + <right>` | add left to right number 
-| `<left> - <right>` | substract right number from left
-| `<left> * <right>` | multiply left by right number
-| `<left> / <right>` | divide left by right number
-| `<left> // <right>`| divide left by right number and round to an integer
-| `<left> % <right>` | calculates the modulus of left by right ";
             });
 
             AddStep("MarkdownImage", () =>
@@ -213,6 +214,9 @@ namespace osu.Framework.Markdown.Tests.Visual
                 case FencedCodeBlock fencedCodeBlock:
                     container.Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
                     break;
+                case Table table:
+                    container.Add(new MarkdownTable(table));
+                    break;
                 case ListBlock listBlock:
                     var childContainer = new FillFlowContainer
                     {
@@ -262,6 +266,70 @@ namespace osu.Framework.Markdown.Tests.Visual
             Colour = new Color4(255, 0, 0, 255);
             TextSize = 21;
             Text = markdownObject?.GetType() + " Not implemented.";
+        }
+    }
+
+    /// <summary>
+    /// MarkdownTable : 
+    /// |Operator            | Description
+    /// |--------------------|------------
+    /// | `<left> + <right>` | add left to right number 
+    /// | `<left> - <right>` | substract right number from left
+    /// | `<left> * <right>` | multiply left by right number
+    /// | `<left> / <right>` | divide left by right number
+    /// | `<left> // <right>`| divide left by right number and round to an integer
+    /// | `<left> % <right>` | calculates the modulus of left by right
+    /// </summary>
+    internal class MarkdownTable : GridContainer
+    {
+        public MarkdownTable(Table table)
+        {
+            RelativeSizeAxes = Axes.X;
+
+            List<List<Container>> listContainerArray = new List<List<Container>>();
+            foreach(TableRow tableRow in table)
+            {
+                List<Container> rows = new List<Container>();
+                if(tableRow!=null)
+                    foreach(TableCell tableCell in tableRow)
+                    {
+                        if(tableCell!=null)
+                            foreach(ParagraphBlock single in tableCell)
+                            {
+                                var paragraphText = ParagraphBlockHelper.GenerateText(single);
+                                paragraphText.Margin = new MarginPadding{Left = 2,Right = 2,Top = 2,Bottom = 2};
+
+                                rows.Add(new Container
+                                {
+                                    AutoSizeAxes = Axes.Y,
+                                    RelativeSizeAxes = Axes.X,
+                                    BorderThickness = 1.8f,
+                                    BorderColour = Color4.White,
+                                    Masking = true,
+                                    Children = new Drawable[]
+                                    {
+                                        new Box
+                                        {
+                                            RelativeSizeAxes = Axes.Both,
+                                            Colour = listContainerArray.Count % 2 == 0 ? Color4.White : Color4.LightGray,
+                                            Alpha = 0.3f
+                                        },
+                                        paragraphText
+                                    }
+                                });
+                            }
+                    }
+                listContainerArray.Add(rows);
+            }
+            this.Content = listContainerArray.Select(X=>X.ToArray()).ToArray();
+
+            
+        }
+
+        [BackgroundDependencyLoader]
+        private void load()
+        {
+            Height = Content.Sum(X=>X.Max(Y=>Y.DrawHeight));
         }
     }
 
