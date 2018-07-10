@@ -279,16 +279,17 @@ namespace osu.Framework.Markdown.Tests.Visual
     internal class MarkdownTable : Container
     {
         private MarkdownTableContainer tableContainer;
+        private List<List<MarkdownTableCell>> listContainerArray = new List<List<MarkdownTableCell>>();
         public MarkdownTable(Table table)
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
             Padding = new MarginPadding{Right = 100};
 
-            List<List<Container>> listContainerArray = new List<List<Container>>();
+            
             foreach(TableRow tableRow in table)
             {
-                List<Container> rows = new List<Container>();
+                List<MarkdownTableCell> rows = new List<MarkdownTableCell>();
 
                 if(tableRow!=null)
                     foreach(TableCell tableCell in tableRow)
@@ -311,7 +312,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             //define max row is 50
-            tableContainer.RowDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 30).ToArray();
+            tableContainer.RowDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 50).ToArray();
             
             int row = listContainerArray.FirstOrDefault()?.Count ?? 0;
 
@@ -323,8 +324,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         protected override void Update()
         {
-            tableContainer.RowDimensions = tableContainer.Content.Select(X=>new Dimension(GridSizeMode.Absolute,X.Max(Y=>Y.DrawHeight))).ToArray();
-            //Height = Content.Sum(X=>X.Max(Y=>Y.DrawHeight));
+            tableContainer.RowDimensions = listContainerArray.Select(X=>new Dimension(GridSizeMode.Absolute,X.Max(Y=>Y.TextFlowContainer.DrawHeight + 10))).ToArray();
             base.Update();
         }
 
@@ -340,12 +340,12 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         private class MarkdownTableCell : Container
         {
+            public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
             MarkdownTextFlowContainer textFlowContainer;
 
             public MarkdownTableCell(TableCell cell,int rowNumber)
             {
-                AutoSizeAxes = Axes.Y;
-                RelativeSizeAxes = Axes.X;
+                RelativeSizeAxes = Axes.Both;
                 BorderThickness = 1.8f;
                 BorderColour = Color4.White;
                 Masking = true;
@@ -377,14 +377,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                     ParagraphBlockHelper.GeneratePartial(textFlowContainer,single.Inline);
                 }
             }
-
-            [BackgroundDependencyLoader]
-            private void load()
-            {
-                //Width = textFlowContainer.DrawWidth;
-                //Height = textFlowContainer.DrawHeight;
-            }
-
         }
     }
 
