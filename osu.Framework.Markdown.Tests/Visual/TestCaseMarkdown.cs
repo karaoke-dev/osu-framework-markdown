@@ -268,51 +268,52 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// MarkdownTable : 
     /// |Operator            | Description
     /// |--------------------|------------
-    /// | `<left> + <right>` | add left to right number 
-    /// | `<left> - <right>` | substract right number from left
-    /// | `<left> * <right>` | multiply left by right number
-    /// | `<left> / <right>` | divide left by right number
-    /// | `<left> // <right>`| divide left by right number and round to an integer
-    /// | `<left> % <right>` | calculates the modulus of left by right
+    /// | `<left/> + <right/>` | add left to right number 
+    /// | `<left/> - <right/>` | substract right number from left
+    /// | `<left/> * <right/>` | multiply left by right number
+    /// | `<left/> / <right/>` | divide left by right number
+    /// | `<left/> // <right/>`| divide left by right number and round to an integer
+    /// | `<left/> % <right/>` | calculates the modulus of left by right
     /// </summary>
     internal class MarkdownTable : Container
     {
-        private MarkdownTableContainer tableContainer;
-        private List<List<MarkdownTableCell>> listContainerArray = new List<List<MarkdownTableCell>>();
+        private readonly MarkdownTableContainer tableContainer;
+        private readonly List<List<MarkdownTableCell>> listContainerArray = new List<List<MarkdownTableCell>>();
         public MarkdownTable(Table table)
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
-            Padding = new MarginPadding{Right = 100};
+            Padding = new MarginPadding { Right = 100 };
 
-            
-            foreach(TableRow tableRow in table)
+            foreach (var block in table)
             {
+                var tableRow = (TableRow)block;
                 List<MarkdownTableCell> rows = new List<MarkdownTableCell>();
 
-                if(tableRow!=null)
-                    foreach(TableCell tableCell in tableRow)
+                if (tableRow != null)
+                    foreach (var block1 in tableRow)
                     {
-                        if(tableCell!=null)
-                            rows.Add(new MarkdownTableCell(tableCell,listContainerArray.Count));
+                        var tableCell = (TableCell)block1;
+                        if (tableCell != null)
+                            rows.Add(new MarkdownTableCell(tableCell, listContainerArray.Count));
                     }
 
                 listContainerArray.Add(rows);
             }
 
-            this.Children = new Drawable[]
+            Children = new Drawable[]
             {
                 tableContainer = new MarkdownTableContainer
                 {
                     AutoSizeAxes = Axes.Y,
                     RelativeSizeAxes = Axes.X,
-                    Content = listContainerArray.Select(X=>X.ToArray()).ToArray(),
+                    Content = listContainerArray.Select(x=>x.Select(y=>(Drawable)y).ToArray()).ToArray(),
                 }
             };
 
             //define max row is 50
             tableContainer.RowDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 50).ToArray();
-            
+
             int row = listContainerArray.FirstOrDefault()?.Count ?? 0;
 
             if (row == 2)
@@ -323,7 +324,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         protected override void Update()
         {
-            tableContainer.RowDimensions = listContainerArray.Select(X=>new Dimension(GridSizeMode.Absolute,X.Max(Y=>Y.TextFlowContainer.DrawHeight + 10))).ToArray();
+            tableContainer.RowDimensions = listContainerArray.Select(X => new Dimension(GridSizeMode.Absolute, X.Max(Y => Y.TextFlowContainer.DrawHeight + 10))).ToArray();
             base.Update();
         }
 
@@ -340,9 +341,9 @@ namespace osu.Framework.Markdown.Tests.Visual
         private class MarkdownTableCell : Container
         {
             public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
-            MarkdownTextFlowContainer textFlowContainer;
+            private readonly MarkdownTextFlowContainer textFlowContainer;
 
-            public MarkdownTableCell(TableCell cell,int rowNumber)
+            public MarkdownTableCell(TableCell cell, int rowNumber)
             {
                 RelativeSizeAxes = Axes.Both;
                 BorderThickness = 1.8f;
@@ -351,12 +352,12 @@ namespace osu.Framework.Markdown.Tests.Visual
 
                 var backgroundColor = rowNumber % 2 != 0 ? Color4.White : Color4.LightGray;
                 var backgroundAlpha = 0.3f;
-                if(rowNumber==0)
+                if (rowNumber == 0)
                 {
                     backgroundColor = Color4.White;
                     backgroundAlpha = 0.4f;
                 }
-                
+
                 Children = new Drawable[]
                 {
                     new Box
@@ -371,9 +372,10 @@ namespace osu.Framework.Markdown.Tests.Visual
                     }
                 };
 
-                foreach(ParagraphBlock single in cell)
+                foreach (var block in cell)
                 {
-                    ParagraphBlockHelper.GeneratePartial(textFlowContainer,single.Inline);
+                    var single = (ParagraphBlock)block;
+                    ParagraphBlockHelper.GeneratePartial(textFlowContainer, single.Inline);
                 }
             }
         }
@@ -561,7 +563,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                             textFlowContainer.AddImage(new MarkdownImage(imageUrl)
                             {
                                 Width = 300,
-                                Height = 300,
+                                Height = 240,
                             });
                         }
                         break;
@@ -592,32 +594,64 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownImage : Container
     {
-        private readonly string imageUrl;
-
+        private Drawable displayedImage;
+        private Box background;
         public MarkdownImage(string url)
         {
-            imageUrl = url;
+            Children = new Drawable[]
+            {
+                background = new Box
+                {
+                    RelativeSizeAxes = Axes.Both,
+                    Colour = Color4.LightGray,
+                    Alpha = 0.3f
+                },
+                displayedImage = new DelayedLoadWrapper(
+                new ImageContainer(url)
+                {
+                    RelativeSizeAxes = Axes.Both,
+                    OnLoadComplete = d =>
+                    {
+                        background.FadeTo(0,300,Easing.OutQuint);
+                        d.FadeInFromZero(300, Easing.OutQuint);
+                    },
+                })
+            };
         }
 
-        [BackgroundDependencyLoader]
-        private void load(TextureStore textures)
+        private class ImageContainer : Container
         {
-            Texture texture = null;
-            if (!string.IsNullOrEmpty(imageUrl))
-                texture = textures.Get(imageUrl);
+            private readonly string imageUrl;
+            private readonly Sprite image;
 
-            //TODO : get default texture
-            //if (texture == null)
-            //    texture = textures.Get(@"Online/avatar-guest");
-
-            Add(new Sprite
+            public ImageContainer(string url)
             {
-                RelativeSizeAxes = Axes.Both,
-                Texture = texture,
-                FillMode = FillMode.Fit,
-                Anchor = Anchor.Centre,
-                Origin = Anchor.Centre
-            });
+                imageUrl = url;
+                Children = new Drawable[]
+                {
+                    image = new Sprite
+                    {
+                        RelativeSizeAxes = Axes.Both,
+                        FillMode = FillMode.Fit,
+                        Anchor = Anchor.Centre,
+                        Origin = Anchor.Centre
+                    }
+                };
+            }
+
+            [BackgroundDependencyLoader]
+            private void load(TextureStore textures)
+            {
+                Texture texture = null;
+                if (!string.IsNullOrEmpty(imageUrl))
+                    texture = textures.Get(imageUrl);
+
+                //TODO : get default texture
+                //if (texture == null)
+                //    texture = textures.Get(@"Markdown/default-image");
+
+                image.Texture = texture;
+            }
         }
     }
 
