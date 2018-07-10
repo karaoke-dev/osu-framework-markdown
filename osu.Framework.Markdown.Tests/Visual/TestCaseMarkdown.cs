@@ -594,10 +594,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     internal class MarkdownImage : Container
     {
-        private Drawable displayedImage;
-        private Box background;
         public MarkdownImage(string url)
         {
+            Box background;
             Children = new Drawable[]
             {
                 background = new Box
@@ -606,16 +605,16 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Colour = Color4.LightGray,
                     Alpha = 0.3f
                 },
-                displayedImage = new DelayedLoadWrapper(
-                new ImageContainer(url)
-                {
-                    RelativeSizeAxes = Axes.Both,
-                    OnLoadComplete = d =>
+                new DelayedLoadWrapper(
+                    new ImageContainer(url)
                     {
-                        background.FadeTo(0,300,Easing.OutQuint);
-                        d.FadeInFromZero(300, Easing.OutQuint);
-                    },
-                })
+                        RelativeSizeAxes = Axes.Both,
+                        OnLoadComplete = d =>
+                        {
+                            background.FadeTo(0,300,Easing.OutQuint);
+                            d.FadeInFromZero(300, Easing.OutQuint);
+                        },
+                    })
             };
         }
 
