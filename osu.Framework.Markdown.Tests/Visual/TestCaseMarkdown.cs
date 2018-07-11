@@ -200,7 +200,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                             break;
                     }
 
-                    drawableParagraphBlock = ParagraphBlockHelper.GeneratePartial(drawableParagraphBlock, paragraphBlock.Inline);
+                    drawableParagraphBlock.AddInlineText(paragraphBlock.Inline);
                     container.Add(drawableParagraphBlock);
                     break;
                 case QuoteBlock quoteBlock:
@@ -375,7 +375,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 foreach (var block in cell)
                 {
                     var single = (ParagraphBlock)block;
-                    ParagraphBlockHelper.GeneratePartial(textFlowContainer, single.Inline);
+                    textFlowContainer.ParagraphBlock = single;
                 }
             }
         }
@@ -461,7 +461,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
 
             textFlowContainer.Scale = scale;
-            ParagraphBlockHelper.GeneratePartial(textFlowContainer, headingBlock.Inline);
+            textFlowContainer.AddInlineText(headingBlock.Inline);
         }
     }
 
@@ -495,7 +495,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             if (quoteBlock.LastChild is ParagraphBlock paragraphBlock)
-                ParagraphBlockHelper.GeneratePartial(textFlowContainer, paragraphBlock.Inline);
+                textFlowContainer.ParagraphBlock = paragraphBlock;
         }
     }
 
@@ -514,85 +514,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     }
 
     /// <summary>
-    /// Fill <see cref="Inline" /> into <see cref="TextFlowContainer" />
-    /// </summary>
-    internal static class ParagraphBlockHelper
-    {
-        public static MarkdownTextFlowContainer GenerateText(ParagraphBlock paragraphBlock)
-        {
-            var textFlowContainer = new MarkdownTextFlowContainer();
-            GeneratePartial(textFlowContainer, paragraphBlock.Inline);
-            return textFlowContainer;
-        }
-
-        public static MarkdownTextFlowContainer GeneratePartial(MarkdownTextFlowContainer textFlowContainer, ContainerInline lnline)
-        {
-            foreach (var single in lnline)
-            {
-                switch (single)
-                {
-                    case LiteralInline literalInline:
-                        var text = literalInline.Content.ToString();
-                        if (lnline.GetNext(literalInline) is HtmlInline
-                            && lnline.GetPrevious(literalInline) is HtmlInline htmlInline)
-                            textFlowContainer.AddText(text, t => t.Colour = Color4.MediumPurple);
-                        else if (lnline.GetNext(literalInline) is HtmlEntityInline htmlEntityInline)
-                            textFlowContainer.AddText(text, t => t.Colour = Color4.GreenYellow);
-                        else if (literalInline.Parent is LinkInline linkInline)
-                        {
-                            if (!linkInline.IsImage)
-                                textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
-                        }
-                        else
-                            textFlowContainer.AddText(text);
-                        break;
-                    case CodeInline codeInline:
-                        textFlowContainer.AddText(codeInline.Content, t => t.Colour = Color4.Orange);
-                        break;
-                    case EmphasisInline emphasisInline:
-                        //foreach (var child in emphasisInline)
-                        //{
-                        //    textFlowContainer.AddText(child.ToString());
-                        //}
-                        break;
-                    case LinkInline linkInline:
-                        if (linkInline.IsImage)
-                        {
-                            var imageUrl = linkInline.Url;
-                            //insert a image
-                            textFlowContainer.AddImage(new MarkdownImage(imageUrl)
-                            {
-                                Width = 300,
-                                Height = 240,
-                            });
-                        }
-                        break;
-                    case HtmlInline html:
-                    case HtmlEntityInline htmlEntityInline:
-                        //DO nothing
-                        break;
-                    case LineBreakInline lineBreakInline:
-                        //IDK what is this but just ignore
-                        break;
-                        default:
-                            textFlowContainer.AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
-                        break;
-
-                }
-
-                //generate child
-                if (single is ContainerInline containerInline)
-                    GeneratePartial(textFlowContainer, containerInline);
-            }
-
-            return textFlowContainer;
-        }
-    }
-
-    /// <summary>
     /// Load image from url
     /// </summary>
-    internal class MarkdownImage : Container
+    public class MarkdownImage : Container
     {
         public MarkdownImage(string url)
         {
@@ -657,8 +581,20 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// <summary>
     /// Markdown text flow container.
     /// </summary>
-    internal class MarkdownTextFlowContainer : CustomizableTextContainer
+    public class MarkdownTextFlowContainer : CustomizableTextContainer
     {
+        private ParagraphBlock paragraphBlock;
+
+        public ParagraphBlock ParagraphBlock
+        {
+            get => paragraphBlock;
+            set
+            {
+                paragraphBlock = value;
+                GeneratePartial(this, paragraphBlock.Inline);
+            }
+        }
+
         public MarkdownTextFlowContainer()
         {
             RelativeSizeAxes = Axes.X;
@@ -681,6 +617,75 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             text = text.Replace("[", "[[").Replace("]", "]]");
             return base.AddParagraph(text, creationParameters);
+        }
+
+        public MarkdownTextFlowContainer AddInlineText(ContainerInline lnline)
+        {
+            return GeneratePartial(this, lnline);
+        }
+
+        protected MarkdownTextFlowContainer GeneratePartial(MarkdownTextFlowContainer textFlowContainer, ContainerInline lnline)
+        {
+            foreach (var single in lnline)
+            {
+                if (single is LiteralInline literalInline)
+                {
+                    var text = literalInline.Content.ToString();
+                    if (lnline.GetNext(literalInline) is HtmlInline
+                        && lnline.GetPrevious(literalInline) is HtmlInline)
+                        textFlowContainer.AddText(text, t => t.Colour = Color4.MediumPurple);
+                    else if (lnline.GetNext(literalInline) is HtmlEntityInline)
+                        textFlowContainer.AddText(text, t => t.Colour = Color4.GreenYellow);
+                    else if (literalInline.Parent is LinkInline linkInline)
+                    {
+                        if (!linkInline.IsImage)
+                            textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
+                    }
+                    else
+                        textFlowContainer.AddText(text);
+                }
+                else if (single is CodeInline codeInline)
+                {
+                    textFlowContainer.AddText(codeInline.Content, t => t.Colour = Color4.Orange);
+                }
+                else if (single is EmphasisInline)
+                {
+                    //foreach (var child in emphasisInline)
+                    //{
+                    //    textFlowContainer.AddText(child.ToString());
+                    //}
+                }
+                else if (single is LinkInline linkInline)
+                {
+                    if (linkInline.IsImage)
+                    {
+                        var imageUrl = linkInline.Url;
+                        //insert a image
+                        textFlowContainer.AddImage(new MarkdownImage(imageUrl)
+                        {
+                            Width = 300,
+                            Height = 240,
+                        });
+                    }
+                }
+                else if (single is HtmlInline || single is HtmlEntityInline)
+                {
+                    //DO nothing
+                }
+                else if (single is LineBreakInline)
+                {
+                    //IDK what is this but just ignore
+                }
+                else
+                {
+                    textFlowContainer.AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
+                }
+
+                //generate child
+                if (single is ContainerInline containerInline) GeneratePartial(textFlowContainer, containerInline);
+            }
+
+            return textFlowContainer;
         }
     }
 
