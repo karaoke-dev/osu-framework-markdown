@@ -90,6 +90,16 @@ namespace osu.Framework.Markdown.Tests.Visual
 | `'left' * <right>` | concatenates the left string `right` times: `'a' * 5  -> aaaaa`. left and right and be swapped as long as there is one string and one number.";
             });
 
+             AddStep("Markdown Table (Aligned)", () =>
+            {
+                markdownContainer.Text =
+                    @"| Left-Aligned  | Center Aligned  | Right Aligned |
+| :------------ |:---------------:| -----:|
+| col 3 is      | some wordy text | $1600 |
+| col 2 is      | centered        |   $12 |
+| zebra stripes | are neat        |    $1 |";
+            });
+
             AddStep("Markdown Paragraph 1", () =>
             {
                 markdownContainer.Text = @"A text enclosed by `{{` and `}}` is a scriban **code block** that will be evaluated by the scriban templating engine.";
@@ -300,11 +310,12 @@ namespace osu.Framework.Markdown.Tests.Visual
                 List<MarkdownTableCell> rows = new List<MarkdownTableCell>();
 
                 if (tableRow != null)
-                    foreach (var block1 in tableRow)
+                    for(int columnIndex = 0 ; columnIndex < tableRow.Count;columnIndex ++)
                     {
-                        var tableCell = (TableCell)block1;
+                        var ColumnDimensions = table.ColumnDefinitions[columnIndex];
+                        var tableCell = (TableCell)tableRow[columnIndex];
                         if (tableCell != null)
-                            rows.Add(new MarkdownTableCell(tableCell, listContainerArray.Count));
+                            rows.Add(new MarkdownTableCell(tableCell,ColumnDimensions, listContainerArray.Count));
                     }
 
                 listContainerArray.Add(rows);
@@ -352,7 +363,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
             private readonly MarkdownTextFlowContainer textFlowContainer;
 
-            public MarkdownTableCell(TableCell cell, int rowNumber)
+            public MarkdownTableCell(TableCell cell,TableColumnDefinition definition, int rowNumber)
             {
                 RelativeSizeAxes = Axes.Both;
                 BorderThickness = 1.8f;
@@ -385,6 +396,22 @@ namespace osu.Framework.Markdown.Tests.Visual
                 {
                     var single = (ParagraphBlock)block;
                     textFlowContainer.ParagraphBlock = single;
+                }
+
+                switch(definition.Alignment)
+                {
+                    case TableColumnAlign.Center : 
+                        textFlowContainer.TextAnchor = Anchor.TopCentre;
+                    break;
+
+                    case TableColumnAlign.Right : 
+                        //TODO : make this work
+                        //textFlowContainer.TextAnchor = Anchor.TopRight;
+                    break;
+
+                    default : 
+                        textFlowContainer.TextAnchor = Anchor.TopLeft;
+                    break;
                 }
             }
         }
