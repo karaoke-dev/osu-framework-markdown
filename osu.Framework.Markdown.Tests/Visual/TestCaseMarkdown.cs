@@ -157,7 +157,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 var markdownText = value;
                 var pipeline = CreateBuilder();
-                var document = Markdig.Markdown.Parse(markdownText, pipeline);
+                var document = Markdown.Parse(markdownText, pipeline);
 
                 markdownContainer.Clear();
                 foreach (var component in document)
@@ -171,13 +171,13 @@ namespace osu.Framework.Markdown.Tests.Visual
             set => markdownContainer.Spacing = new Vector2(value);
         }
 
-        public virtual MarginPadding Margin
+        public virtual MarginPadding MarkdownMargin
         {
             get => markdownContainer.Margin;
             set => markdownContainer.Margin = value;
         }
 
-        public virtual MarginPadding Padding
+        public virtual MarginPadding MarkdownPadding
         {
             get => markdownContainer.Padding;
             set => markdownContainer.Padding = value;
@@ -204,8 +204,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             Spacing = 25;
-            Padding = new MarginPadding {Left = 10, Right = 30};
-            Margin = new MarginPadding {Left = 10, Right = 30};
+            Padding = new MarginPadding { Left = 10, Right = 30 };
+            Margin = new MarginPadding { Left = 10, Right = 30 };
         }
 
         protected virtual void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
@@ -216,7 +216,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                     container.Add(CreateMarkdownHeading(headingBlock));
                     break;
                 case ParagraphBlock paragraphBlock:
-                    container.Add(CreateMarkdownTextFlowContainer(paragraphBlock,layerIndex));
+                    container.Add(CreateMarkdownTextFlowContainer(paragraphBlock, layerIndex));
                     break;
                 case QuoteBlock quoteBlock:
                     container.Add(CreateMarkdownQuoteBlock(quoteBlock));
@@ -257,7 +257,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             return new MarkdownHeading(headingBlock);
         }
 
-        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer(ParagraphBlock paragraphBlock,int layerIndex)
+        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer(ParagraphBlock paragraphBlock, int layerIndex)
         {
             var drawableParagraphBlock = new MarkdownTextFlowContainer();
             switch (layerIndex)
@@ -352,12 +352,12 @@ namespace osu.Framework.Markdown.Tests.Visual
                 List<MarkdownTableCell> rows = new List<MarkdownTableCell>();
 
                 if (tableRow != null)
-                    for(int columnIndex = 0 ; columnIndex < tableRow.Count;columnIndex ++)
+                    for (int columnIndex = 0; columnIndex < tableRow.Count; columnIndex++)
                     {
-                        var ColumnDimensions = table.ColumnDefinitions[columnIndex];
+                        var columnDimensions = table.ColumnDefinitions[columnIndex];
                         var tableCell = (TableCell)tableRow[columnIndex];
                         if (tableCell != null)
-                            rows.Add(new MarkdownTableCell(tableCell,ColumnDimensions, listContainerArray.Count));
+                            rows.Add(new MarkdownTableCell(tableCell, columnDimensions, listContainerArray.Count));
                     }
 
                 listContainerArray.Add(rows);
@@ -386,7 +386,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         protected override void Update()
         {
-            tableContainer.RowDimensions = listContainerArray.Select(X => new Dimension(GridSizeMode.Absolute, X.Max(Y => Y.TextFlowContainer.DrawHeight + 10))).ToArray();
+            tableContainer.RowDimensions = listContainerArray.Select(X => new Dimension(GridSizeMode.Absolute, X.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
             base.Update();
         }
 
@@ -405,7 +405,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
             private readonly MarkdownTextFlowContainer textFlowContainer;
 
-            public MarkdownTableCell(TableCell cell,TableColumnDefinition definition, int rowNumber)
+            public MarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
             {
                 RelativeSizeAxes = Axes.Both;
                 BorderThickness = 1.8f;
@@ -440,20 +440,20 @@ namespace osu.Framework.Markdown.Tests.Visual
                     textFlowContainer.ParagraphBlock = single;
                 }
 
-                switch(definition.Alignment)
+                switch (definition.Alignment)
                 {
-                    case TableColumnAlign.Center : 
+                    case TableColumnAlign.Center:
                         textFlowContainer.TextAnchor = Anchor.TopCentre;
-                    break;
+                        break;
 
-                    case TableColumnAlign.Right : 
+                    case TableColumnAlign.Right:
                         //TODO : make this work
                         //textFlowContainer.TextAnchor = Anchor.TopRight;
-                    break;
+                        break;
 
-                    default : 
+                    default:
                         textFlowContainer.TextAnchor = Anchor.TopLeft;
-                    break;
+                        break;
                 }
             }
         }
