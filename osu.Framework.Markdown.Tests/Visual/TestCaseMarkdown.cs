@@ -165,10 +165,22 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
 
-        public float Spacing
+        public virtual float Spacing
         {
             get => markdownContainer.Spacing.Y;
             set => markdownContainer.Spacing = new Vector2(value);
+        }
+
+        public virtual MarginPadding Margin
+        {
+            get => markdownContainer.Margin;
+            set => markdownContainer.Margin = value;
+        }
+
+        public virtual MarginPadding Padding
+        {
+            get => markdownContainer.Padding;
+            set => markdownContainer.Padding = value;
         }
 
         private const int root_layer_index = 0;
@@ -184,8 +196,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                     RelativeSizeAxes = Axes.Both,
                     Child = markdownContainer = new FillFlowContainer
                     {
-                        Padding = new MarginPadding { Left = 10, Right = 30 },
-                        Margin = new MarginPadding { Left = 10, Right = 30 },
                         AutoSizeAxes = Axes.Y,
                         RelativeSizeAxes = Axes.X,
                         Direction = FillDirection.Vertical,
@@ -194,6 +204,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             Spacing = 25;
+            Padding = new MarginPadding { Left = 10, Right = 30 },
+            Margin = new MarginPadding { Left = 10, Right = 30 },
         }
 
         protected void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
