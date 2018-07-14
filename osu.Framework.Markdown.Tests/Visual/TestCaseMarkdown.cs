@@ -20,6 +20,7 @@ using OpenTK;
 using OpenTK.Graphics;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.Allocation;
+using osu.Framework.Graphics.Effects;
 
 namespace osu.Framework.Markdown.Tests.Visual
 {
@@ -668,7 +669,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             set
             {
                 paragraphBlock = value;
-                GeneratePartial(this, paragraphBlock.Inline);
+                Clear();
+                AddInlineText(paragraphBlock.Inline);
             }
         }
 
@@ -698,11 +700,6 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         public MarkdownTextFlowContainer AddInlineText(ContainerInline lnline)
         {
-            return GeneratePartial(this, lnline);
-        }
-
-        protected MarkdownTextFlowContainer GeneratePartial(MarkdownTextFlowContainer textFlowContainer, ContainerInline lnline)
-        {
             foreach (var single in lnline)
             {
                 if (single is LiteralInline literalInline)
@@ -710,20 +707,20 @@ namespace osu.Framework.Markdown.Tests.Visual
                     var text = literalInline.Content.ToString();
                     if (lnline.GetNext(literalInline) is HtmlInline
                         && lnline.GetPrevious(literalInline) is HtmlInline)
-                        textFlowContainer.AddText(text, t => t.Colour = Color4.MediumPurple);
+                        AddText(text, t => t.Colour = Color4.MediumPurple);
                     else if (lnline.GetNext(literalInline) is HtmlEntityInline)
-                        textFlowContainer.AddText(text, t => t.Colour = Color4.GreenYellow);
+                        AddText(text, t => t.Colour = Color4.GreenYellow);
                     else if (literalInline.Parent is LinkInline linkInline)
                     {
                         if (!linkInline.IsImage)
-                            textFlowContainer.AddText(text, t => t.Colour = Color4.DodgerBlue);
+                            AddText(text, t => t.Colour = Color4.DodgerBlue);
                     }
                     else
-                        textFlowContainer.AddText(text);
+                        AddText(text);
                 }
                 else if (single is CodeInline codeInline)
                 {
-                    textFlowContainer.AddText(codeInline.Content, t => t.Colour = Color4.Orange);
+                    AddCodeInLineText(codeInline);
                 }
                 else if (single is EmphasisInline)
                 {
@@ -736,13 +733,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                 {
                     if (linkInline.IsImage)
                     {
-                        var imageUrl = linkInline.Url;
-                        //insert a image
-                        textFlowContainer.AddImage(new MarkdownImage(imageUrl)
-                        {
-                            Width = 300,
-                            Height = 240,
-                        });
+                        AddImage(linkInline);
                     }
                 }
                 else if (single is HtmlInline || single is HtmlEntityInline)
@@ -755,14 +746,33 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
                 else
                 {
-                    textFlowContainer.AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
+                    AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
                 }
 
                 //generate child
-                if (single is ContainerInline containerInline) GeneratePartial(textFlowContainer, containerInline);
+                if (single is ContainerInline containerInline) AddInlineText(containerInline);
             }
 
-            return textFlowContainer;
+            return this;
+        }
+
+        protected virtual void AddCodeInLineText(CodeInline codeInline)
+        {
+             AddText(codeInline.Content, t =>
+             {
+                 t.Colour = Color4.Orange;
+             });
+        }
+
+        protected virtual void AddImage(LinkInline linkInline)
+        {
+            var imageUrl = linkInline.Url;
+            //insert a image
+            AddImage(new MarkdownImage(imageUrl)
+            {
+                Width = 300,
+                Height = 240,
+            });
         }
     }
 
