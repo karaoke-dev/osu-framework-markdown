@@ -204,8 +204,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             Spacing = 25;
-            Padding = new MarginPadding { Left = 10, Right = 30 };
-            Margin = new MarginPadding { Left = 10, Right = 30 };
+            MarkdownPadding = new MarginPadding { Left = 10, Right = 30 };
+            MarkdownMargin = new MarginPadding { Left = 10, Right = 30 };
         }
 
         protected virtual void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
@@ -240,7 +240,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                         AddMarkdownComponent(single, container, layerIndex);
                     break;
                 default:
-                    container.Add(CreateNotImplementMarkdown(markdownObject));
+                    container.Add(CreateNotImplementedMarkdown(markdownObject));
                     break;
             }
         }
@@ -303,9 +303,9 @@ namespace osu.Framework.Markdown.Tests.Visual
             return new MarkdownSeperator();
         }
 
-        protected virtual Drawable CreateNotImplementMarkdown(IMarkdownObject markdownObject)
+        protected virtual Drawable CreateNotImplementedMarkdown(IMarkdownObject markdownObject)
         {
-            return new NotExistingMarkdown(markdownObject);
+            return new NotImplementedMarkdown(markdownObject);
         }
 
     }
@@ -314,9 +314,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// NotExistMarkdown :
     /// shows the <see cref="IMarkdownObject" /> does not implement in drawable object
     /// </summary>
-    public class NotExistingMarkdown : SpriteText
+    public class NotImplementedMarkdown : SpriteText
     {
-        public NotExistingMarkdown(IMarkdownObject markdownObject)
+        public NotImplementedMarkdown(IMarkdownObject markdownObject)
         {
             Colour = new Color4(255, 0, 0, 255);
             TextSize = 21;
