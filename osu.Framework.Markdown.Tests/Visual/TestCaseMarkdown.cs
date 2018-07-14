@@ -204,71 +204,43 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             Spacing = 25;
-            Padding = new MarginPadding { Left = 10, Right = 30 },
-            Margin = new MarginPadding { Left = 10, Right = 30 },
+            Padding = new MarginPadding {Left = 10, Right = 30};
+            Margin = new MarginPadding {Left = 10, Right = 30};
         }
 
-        protected void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
+        protected virtual void AddMarkdownComponent(IMarkdownObject markdownObject, FillFlowContainer container, int layerIndex)
         {
             switch (markdownObject)
             {
                 case HeadingBlock headingBlock:
-                    container.Add(new MarkdownHeading(headingBlock));
+                    container.Add(CreateMarkdownHeading(headingBlock));
                     break;
                 case ParagraphBlock paragraphBlock:
-                    var drawableParagraphBlock = new MarkdownTextFlowContainer();
-                    switch (layerIndex)
-                    {
-                        case 1:
-                            drawableParagraphBlock.AddText("@ ", t => t.Colour = Color4.DarkGray);
-                            break;
-                        case 2:
-                            drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
-                            break;
-                        case 3:
-                        case 4:
-                            drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
-                            break;
-                    }
-
-                    drawableParagraphBlock.AddInlineText(paragraphBlock.Inline);
-                    container.Add(drawableParagraphBlock);
+                    container.Add(CreateMarkdownTextFlowContainer(paragraphBlock,layerIndex));
                     break;
                 case QuoteBlock quoteBlock:
-                    container.Add(new MarkdownQuoteBlock(quoteBlock));
+                    container.Add(CreateMarkdownQuoteBlock(quoteBlock));
                     break;
                 case FencedCodeBlock fencedCodeBlock:
-                    container.Add(new MarkdownFencedCodeBlock(fencedCodeBlock));
+                    container.Add(CreateMarkdownFencedCodeBlock(fencedCodeBlock));
                     break;
                 case Table table:
-                    container.Add(new MarkdownTable(table));
+                    container.Add(CreateMarkdownTable(table));
                     break;
                 case ListBlock listBlock:
-                    var childContainer = new FillFlowContainer
-                    {
-                        Direction = FillDirection.Vertical,
-                        Spacing = new Vector2(10, 10),
-                        Padding = new MarginPadding { Left = 25, Right = 5 },
-                        AutoSizeAxes = Axes.Y,
-                        RelativeSizeAxes = Axes.X,
-                    };
+                    var childContainer = CreateChildFillFlowContainer();
                     container.Add(childContainer);
                     foreach (var single in listBlock)
-                    {
                         AddMarkdownComponent(single, childContainer, layerIndex + 1);
-                    }
                     break;
                 case ListItemBlock listItemBlock:
                     foreach (var single in listItemBlock)
-                    {
                         AddMarkdownComponent(single, container, layerIndex);
-                    }
                     break;
                 default:
-                    container.Add(new NotExistingMarkdown(markdownObject));
+                    container.Add(CreateNotImplementMarkdown(markdownObject));
                     break;
             }
-
 
             //show seperator line
             if (markdownObject is LeafBlock leafBlock && !(markdownObject is ParagraphBlock))
@@ -279,13 +251,71 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
             }
         }
+
+        protected virtual MarkdownHeading CreateMarkdownHeading(HeadingBlock headingBlock)
+        {
+            return new MarkdownHeading(headingBlock);
+        }
+
+        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer(ParagraphBlock paragraphBlock,int layerIndex)
+        {
+            var drawableParagraphBlock = new MarkdownTextFlowContainer();
+            switch (layerIndex)
+            {
+                case 1:
+                    drawableParagraphBlock.AddText("@ ", t => t.Colour = Color4.DarkGray);
+                    break;
+                case 2:
+                    drawableParagraphBlock.AddText("# ", t => t.Colour = Color4.DarkGray);
+                    break;
+                case 3:
+                case 4:
+                    drawableParagraphBlock.AddText("+ ", t => t.Colour = Color4.DarkGray);
+                    break;
+            }
+
+            drawableParagraphBlock.AddInlineText(paragraphBlock.Inline);
+            return drawableParagraphBlock;
+        }
+
+        protected virtual MarkdownQuoteBlock CreateMarkdownQuoteBlock(QuoteBlock quoteBlock)
+        {
+            return new MarkdownQuoteBlock(quoteBlock);
+        }
+
+        protected virtual MarkdownFencedCodeBlock CreateMarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
+        {
+            return new MarkdownFencedCodeBlock(fencedCodeBlock);
+        }
+
+        protected virtual MarkdownTable CreateMarkdownTable(Table table)
+        {
+            return new MarkdownTable(table);
+        }
+
+        protected virtual FillFlowContainer CreateChildFillFlowContainer()
+        {
+            return new FillFlowContainer
+            {
+                Direction = FillDirection.Vertical,
+                Spacing = new Vector2(10, 10),
+                Padding = new MarginPadding { Left = 25, Right = 5 },
+                AutoSizeAxes = Axes.Y,
+                RelativeSizeAxes = Axes.X,
+            };
+        }
+
+        protected virtual Drawable CreateNotImplementMarkdown(IMarkdownObject markdownObject)
+        {
+            return new NotExistingMarkdown(markdownObject);
+        }
     }
 
     /// <summary>
     /// NotExistMarkdown :
     /// shows the <see cref="IMarkdownObject" /> does not implement in drawable object
     /// </summary>
-    internal class NotExistingMarkdown : SpriteText
+    public class NotExistingMarkdown : SpriteText
     {
         public NotExistingMarkdown(IMarkdownObject markdownObject)
         {
@@ -306,7 +336,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// | `<left/> // <right/>`| divide left by right number and round to an integer
     /// | `<left/> % <right/>` | calculates the modulus of left by right
     /// </summary>
-    internal class MarkdownTable : Container
+    public class MarkdownTable : Container
     {
         private readonly MarkdownTableContainer tableContainer;
         private readonly List<List<MarkdownTableCell>> listContainerArray = new List<List<MarkdownTableCell>>();
@@ -435,7 +465,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// foo
     /// ```
     /// </summary>
-    internal class MarkdownFencedCodeBlock : Container
+    public class MarkdownFencedCodeBlock : Container
     {
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
@@ -475,7 +505,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// ###Heading3
     /// ###3Heading4
     /// </summary>
-    internal class MarkdownHeading : Container
+    public class MarkdownHeading : Container
     {
         public MarkdownHeading(HeadingBlock headingBlock)
         {
@@ -517,7 +547,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// MarkdownQuoteBlock :
     /// > NOTE: This document does not describe the `liquid` language.
     /// </summary>
-    internal class MarkdownQuoteBlock : Container
+    public class MarkdownQuoteBlock : Container
     {
         public MarkdownQuoteBlock(QuoteBlock quoteBlock)
         {
