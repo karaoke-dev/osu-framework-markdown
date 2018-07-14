@@ -157,7 +157,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 var markdownText = value;
                 var pipeline = CreateBuilder();
-                var document = Markdown.Parse(markdownText, pipeline);
+                var document = Markdig.Markdown.Parse(markdownText, pipeline);
 
                 markdownContainer.Clear();
                 foreach (var component in document)
@@ -214,6 +214,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 case HeadingBlock headingBlock:
                     container.Add(CreateMarkdownHeading(headingBlock));
+                    if (headingBlock.Level < 3)
+                        container.Add(CreateMarkdownSeperator());
                     break;
                 case ParagraphBlock paragraphBlock:
                     container.Add(CreateMarkdownTextFlowContainer(paragraphBlock, layerIndex));
@@ -240,15 +242,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                 default:
                     container.Add(CreateNotImplementMarkdown(markdownObject));
                     break;
-            }
-
-            //show seperator line
-            if (markdownObject is LeafBlock leafBlock && !(markdownObject is ParagraphBlock))
-            {
-                if (leafBlock.Inline != null)
-                {
-                    container.Add(new MarkdownSeperator());
-                }
             }
         }
 
@@ -305,10 +298,16 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
         }
 
+        protected virtual MarkdownSeperator CreateMarkdownSeperator()
+        {
+            return new MarkdownSeperator();
+        }
+
         protected virtual Drawable CreateNotImplementMarkdown(IMarkdownObject markdownObject)
         {
             return new NotExistingMarkdown(markdownObject);
         }
+
     }
 
     /// <summary>
@@ -581,7 +580,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// MarkdownSeperator :
     /// (spacing)
     /// </summary>
-    internal class MarkdownSeperator : Box
+    public class MarkdownSeperator : Box
     {
         public MarkdownSeperator()
         {
