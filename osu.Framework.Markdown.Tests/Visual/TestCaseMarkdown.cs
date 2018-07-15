@@ -50,6 +50,11 @@ namespace osu.Framework.Markdown.Tests.Visual
 ";
             });
 
+            AddStep("Markdown Svg Tag", () =>
+            {
+                markdownContainer.Text = @"![](https://img.shields.io/github/stars/pandao/editor.md.svg) ![]";
+            });
+
             AddStep("Markdown Heading", () =>
             {
                 markdownContainer.Text = @"- [1. Blocks](#1-blocks)
