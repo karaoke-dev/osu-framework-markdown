@@ -21,6 +21,7 @@ using OpenTK.Graphics;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics.Effects;
+using osu.Framework.Graphics.Colour;
 
 namespace osu.Framework.Markdown.Tests.Visual
 {
@@ -34,6 +35,12 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 RelativeSizeAxes = Axes.Both,
             });
+
+            AddStep("Html in line", () =>
+            {
+                markdownContainer.Text = @"  - [9.3 <code>case</code> and <code>when</code>](#93-case-and-when)";
+            });
+
 
             AddStep("Markdown Heading", () =>
             {
@@ -723,10 +730,29 @@ namespace osu.Framework.Markdown.Tests.Visual
                         AddText(text, t => t.Colour = Color4.MediumPurple);
                     else if (lnline.GetNext(literalInline) is HtmlEntityInline)
                         AddText(text, t => t.Colour = Color4.GreenYellow);
+                    else if(literalInline.Parent is EmphasisInline emphasisInline)
+                    {
+                        if(emphasisInline.IsDouble)
+                        {
+                            switch(emphasisInline.DelimiterChar)
+                            {
+                                case '*':
+                                    AddBoldText(text,literalInline);
+                                break;
+                                default : 
+                                    AddDefalutLiteralInlineText(text,literalInline);
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            AddDefalutLiteralInlineText(text,literalInline);
+                        }   
+                    }
                     else if (literalInline.Parent is LinkInline linkInline)
                     {
                         if (!linkInline.IsImage)
-                            AddText(text, t => t.Colour = Color4.DodgerBlue);
+                            AddLinkText(text,literalInline);
                     }
                     else
                         AddText(text);
@@ -735,13 +761,6 @@ namespace osu.Framework.Markdown.Tests.Visual
                 {
                     AddCodeInLineText(codeInline);
                 }
-                else if (single is EmphasisInline)
-                {
-                    //foreach (var child in emphasisInline)
-                    //{
-                    //    textFlowContainer.AddText(child.ToString());
-                    //}
-                }
                 else if (single is LinkInline linkInline)
                 {
                     if (linkInline.IsImage)
@@ -749,7 +768,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                         AddImage(linkInline);
                     }
                 }
-                else if (single is HtmlInline || single is HtmlEntityInline)
+                else if (single is HtmlInline || single is HtmlEntityInline || single is EmphasisInline)
                 {
                     //DO nothing
                 }
@@ -769,6 +788,31 @@ namespace osu.Framework.Markdown.Tests.Visual
             return this;
         }
 
+        protected virtual void AddBoldText(string text,LiteralInline literalInline)
+        {
+            //TODO : make real "Bold text"
+            AddDrawanle(new SpriteText
+                            {
+                                Text = text,
+                                Colour = Color4.LightGray
+                            }.WithEffect(new GlowEffect
+                            {
+                                BlurSigma = new Vector2(1f),
+                                Strength = 2f,
+                                Colour = ColourInfo.GradientHorizontal(new Color4(1.2f, 1.2f, 1.2f, 1f), new Color4(1.2f, 1.2f, 1.2f, 1f)),
+                            }));
+        }
+
+        protected virtual void AddLinkText(string text,LiteralInline literalInline)
+        {
+            AddText(text, t => t.Colour = Color4.DodgerBlue);
+        }
+
+        protected virtual void AddDefalutLiteralInlineText(string text,LiteralInline literalInline)
+        {
+            AddText(text);
+        }
+
         protected virtual void AddCodeInLineText(CodeInline codeInline)
         {
              AddText(codeInline.Content, t =>
@@ -786,6 +830,12 @@ namespace osu.Framework.Markdown.Tests.Visual
                 Width = 300,
                 Height = 240,
             });
+        }
+
+        protected IEnumerable<SpriteText> AddDrawanle(Drawable drawable)
+        {
+            var imageIndex = AddPlaceholder(drawable);
+            return base.AddText("[" + imageIndex + "]");
         }
     }
 
