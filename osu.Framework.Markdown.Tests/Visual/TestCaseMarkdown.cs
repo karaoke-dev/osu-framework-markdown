@@ -340,6 +340,10 @@ namespace osu.Framework.Markdown.Tests.Visual
     {
         private readonly MarkdownTableContainer tableContainer;
         private readonly List<List<MarkdownTableCell>> listContainerArray = new List<List<MarkdownTableCell>>();
+
+        protected virtual MarkdownTableCell CreateMarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber) =>
+            new MarkdownTableCell(cell, definition, rowNumber);
+
         public MarkdownTable(Table table)
         {
             AutoSizeAxes = Axes.Y;
@@ -357,7 +361,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                         var columnDimensions = table.ColumnDefinitions[columnIndex];
                         var tableCell = (TableCell)tableRow[columnIndex];
                         if (tableCell != null)
-                            rows.Add(new MarkdownTableCell(tableCell, columnDimensions, listContainerArray.Count));
+                            rows.Add(CreateMarkdownTableCell(tableCell, columnDimensions, listContainerArray.Count));
                     }
 
                 listContainerArray.Add(rows);
@@ -400,10 +404,16 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
 
-        private class MarkdownTableCell : Container
+        public class MarkdownTableCell : Container
         {
             public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
             private readonly MarkdownTextFlowContainer textFlowContainer;
+
+            protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
+                new MarkdownTextFlowContainer
+                {
+                    Margin = new MarginPadding { Left = 5, Right = 5, Top = 5, Bottom = 5 }
+                };
 
             public MarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
             {
@@ -428,10 +438,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                         Colour = backgroundColor,
                         Alpha = backgroundAlpha
                     },
-                    textFlowContainer = new MarkdownTextFlowContainer
-                    {
-                        Margin = new MarginPadding{Left = 5,Right = 5,Top = 5,Bottom = 5}
-                    }
+                    textFlowContainer = CreateMarkdownTextFlowContainer()
                 };
 
                 foreach (var block in cell)
@@ -507,6 +514,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownHeading : Container
     {
+        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
+            new MarkdownTextFlowContainer();
+
         public MarkdownHeading(HeadingBlock headingBlock)
         {
             AutoSizeAxes = Axes.Y;
@@ -516,7 +526,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             Children = new Drawable[]
             {
-                textFlowContainer = new MarkdownTextFlowContainer()
+                textFlowContainer = CreateMarkdownTextFlowContainer()
             };
 
             var level = headingBlock.Level;
@@ -549,6 +559,12 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownQuoteBlock : Container
     {
+        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
+            new MarkdownTextFlowContainer()
+            {
+                Margin = new MarginPadding { Left = 20 }
+            };
+
         public MarkdownQuoteBlock(QuoteBlock quoteBlock)
         {
             AutoSizeAxes = Axes.Y;
@@ -566,10 +582,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Origin = Anchor.CentreLeft,
                     RelativeSizeAxes = Axes.Y
                 },
-                textFlowContainer = new MarkdownTextFlowContainer
-                {
-                    Margin = new MarginPadding { Left = 20 }
-                }
+                textFlowContainer = CreateMarkdownTextFlowContainer()
             };
 
             if (quoteBlock.LastChild is ParagraphBlock paragraphBlock)
