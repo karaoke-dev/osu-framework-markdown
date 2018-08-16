@@ -143,6 +143,22 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
 
             });
+
+            AddStep("MarkdownOsuWiki", () =>
+            {
+                try
+                {
+                    //https://github.com/ppy/osu-wiki/blob/master/wiki/Game_Modes/osu!/en.md
+                    const string url = "https://raw.githubusercontent.com/ppy/osu-wiki/master/wiki/Game_Modes/osu!/en.md";
+                    var httpClient = new HttpClient();
+                    markdownContainer.Text = httpClient.GetStringAsync(url).ConfigureAwait(false).GetAwaiter().GetResult();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+
+            });
         }
     }
 
@@ -151,13 +167,10 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownContainer : CompositeDrawable
     {
-
         protected virtual MarkdownPipeline CreateBuilder()
-        {
-            return new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub)
-                                         .UseEmojiAndSmiley()
-                                         .UseAdvancedExtensions().Build();
-        }
+            => new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub)
+            .UseEmojiAndSmiley()
+            .UseAdvancedExtensions().Build();
 
         public string Text
         {
@@ -246,6 +259,12 @@ namespace osu.Framework.Markdown.Tests.Visual
                 case ListItemBlock listItemBlock:
                     foreach (var single in listItemBlock)
                         AddMarkdownComponent(single, container, layerIndex);
+                    break;
+                case HtmlBlock htmlBlock:
+                    //Cannot read Html Syntex in Markdown.
+                    break;
+                case LinkReferenceDefinition linkReferenceDefinition :
+                    //Link Definition Does not need display.
                     break;
                 default:
                     container.Add(CreateNotImplementedMarkdown(markdownObject));
@@ -356,6 +375,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
             Padding = new MarginPadding { Right = 100 };
+            Margin = new MarginPadding { Right = 100 };
 
             foreach (var block in table)
             {
@@ -383,24 +403,68 @@ namespace osu.Framework.Markdown.Tests.Visual
                     Content = listContainerArray.Select(x=>x.Select(y=>(Drawable)y).ToArray()).ToArray(),
                 }
             };
-
-            //define max row is 50
-            tableContainer.RowDimensions = Enumerable.Repeat(new Dimension(GridSizeMode.AutoSize), 50).ToArray();
-
-            int row = listContainerArray.FirstOrDefault()?.Count ?? 0;
-
-            if (row == 2)
-            {
-                tableContainer.ColumnDimensions = new[] { new Dimension(GridSizeMode.Relative, 0.3f) };
-            }
         }
 
+        private Vector2 lastDrawSize;
         protected override void Update()
         {
-            tableContainer.RowDimensions = listContainerArray.Select(X => new Dimension(GridSizeMode.Absolute, X.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
+            if (lastDrawSize != DrawSize)
+            {
+                lastDrawSize = DrawSize;
+                UpdateColumnDefinitions();
+                UpdateRowDefinitions();
+            }
             base.Update();
         }
 
+        protected virtual void UpdateColumnDefinitions()
+        {
+            var totalColumn = listContainerArray.Max(x => x.Count);
+            var totalRows = listContainerArray.Count;
+
+            var listcolumnMaxWidth = new float[totalColumn];
+
+            for (int row = 0; row < totalRows; row++)
+            {
+                for (int column = 0; column < totalColumn; column++)
+                {
+                    var colimnTextTotalWidth = listContainerArray[row][column].TextFlowContainer.TotalTextWidth();
+
+                    //get max width
+                    listcolumnMaxWidth[column] = Math.Max(listcolumnMaxWidth[column], colimnTextTotalWidth);
+                }
+            }
+
+            listcolumnMaxWidth = listcolumnMaxWidth.Select(x => x + 20).ToArray();
+
+            var columnDimensions = new Dimension[totalColumn];
+
+            //if max width < DrawWidth, means set absolute value to each column
+            if (listcolumnMaxWidth.Sum() < DrawWidth - Margin.Right)
+            {
+                //not relative , define value instead
+                tableContainer.RelativeSizeAxes = Axes.None;
+                for (int column = 0; column < totalColumn; column++)
+                {
+                    columnDimensions[column] = new Dimension(GridSizeMode.Absolute, listcolumnMaxWidth[column]);
+                }
+            }
+            else
+            {
+                //set to relative
+                tableContainer.RelativeSizeAxes = Axes.X;
+                var totalWidth = listcolumnMaxWidth.Sum();
+                for (int column = 0; column < totalColumn; column++)
+                {
+                    columnDimensions[column] = new Dimension(GridSizeMode.Relative, listcolumnMaxWidth[column] / totalWidth);
+                }
+            }
+            tableContainer.ColumnDimensions = columnDimensions;
+        }
+        protected virtual void UpdateRowDefinitions()
+        {
+            tableContainer.RowDimensions = listContainerArray.Select(x => new Dimension(GridSizeMode.Absolute, x.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
+        }
 
         private class MarkdownTableContainer : GridContainer
         {
@@ -616,9 +680,9 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownImage : Container
     {
+        private readonly Box background;
         public MarkdownImage(string url)
         {
-            Box background;
             Children = new Drawable[]
             {
                 background = new Box
@@ -633,17 +697,31 @@ namespace osu.Framework.Markdown.Tests.Visual
                         RelativeSizeAxes = Axes.Both,
                         OnLoadComplete = d =>
                         {
-                            background.FadeTo(0,300,Easing.OutQuint);
-                            d.FadeInFromZero(300, Easing.OutQuint);
+                            if(d is ImageContainer imageContainer)
+                                EffectLoadImageComplete(imageContainer);
                         },
                     })
             };
         }
 
-        private class ImageContainer : Container
+        protected virtual void EffectLoadImageComplete(ImageContainer imageContainer)
+        {
+            var rowImageSize = imageContainer.Image?.Texture?.Size ?? new Vector2();
+            //Resize to image's row size
+            this.ResizeWidthTo(rowImageSize.X,700,Easing.OutQuint);
+            this.ResizeHeightTo(rowImageSize.Y,700,Easing.OutQuint);
+
+            //Hide background image
+            background.FadeTo(0,300,Easing.OutQuint);
+            imageContainer.FadeInFromZero(300, Easing.OutQuint);
+        }
+
+        protected class ImageContainer : Container
         {
             private readonly string imageUrl;
             private readonly Sprite image;
+
+            public Sprite Image => image;
 
             public ImageContainer(string url)
             {
@@ -805,6 +883,8 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         protected virtual void AddLinkText(string text,LiteralInline literalInline)
         {
+            var linkText = (literalInline.Parent as LinkInline)?.Url;
+            //TODO Add Link Text
             AddText(text, t => t.Colour = Color4.DodgerBlue);
         }
 
@@ -827,8 +907,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             //insert a image
             AddImage(new MarkdownImage(imageUrl)
             {
-                Width = 300,
-                Height = 240,
+                Width = 40,
+                Height = 40,
             });
         }
 
@@ -836,6 +916,21 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             var imageIndex = AddPlaceholder(drawable);
             return base.AddText("[" + imageIndex + "]");
+        }
+
+        public bool IsChangeLine()
+        {
+            if (FlowingChildren.Any())
+            {
+                var fortRowX = FlowingChildren.FirstOrDefault()?.BoundingBox.Size.X;
+                return FlowingChildren.Any(x => x.BoundingBox.X != fortRowX);
+            }
+            return true;
+        }
+
+        public float TotalTextWidth()
+        {
+            return FlowingChildren.Sum(x => x.BoundingBox.Size.X);
         }
     }
 
