@@ -192,22 +192,23 @@ namespace osu.Framework.Markdown.Tests.Visual
             set => markdownContainer.Spacing = new Vector2(value);
         }
 
-        public virtual MarginPadding MarkdownMargin
+        public MarginPadding MarkdownMargin
         {
             get => markdownContainer.Margin;
             set => markdownContainer.Margin = value;
         }
 
-        public virtual MarginPadding MarkdownPadding
+        public MarginPadding MarkdownPadding
         {
             get => markdownContainer.Padding;
             set => markdownContainer.Padding = value;
         }
 
         private const int root_layer_index = 0;
-        private readonly FillFlowContainer markdownContainer;
+        private FillFlowContainer markdownContainer;
 
-        public MarkdownContainer()
+        [BackgroundDependencyLoader]
+        private void load()
         {
             InternalChildren = new Drawable[]
             {
@@ -260,10 +261,10 @@ namespace osu.Framework.Markdown.Tests.Visual
                     foreach (var single in listItemBlock)
                         AddMarkdownComponent(single, container, layerIndex);
                     break;
-                case HtmlBlock htmlBlock:
+                case HtmlBlock _:
                     //Cannot read Html Syntex in Markdown.
                     break;
-                case LinkReferenceDefinition linkReferenceDefinition :
+                case LinkReferenceDefinitionGroup _:
                     //Link Definition Does not need display.
                     break;
                 default:
@@ -334,35 +335,29 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             return new NotImplementedMarkdown(markdownObject);
         }
-
     }
 
     /// <summary>
-    /// NotExistMarkdown :
-    /// shows the <see cref="IMarkdownObject" /> does not implement in drawable object
+    /// Visualises a message when a <see cref="IMarkdownObject"/> doesn't have a visual implementation.
     /// </summary>
-    public class NotImplementedMarkdown : SpriteText
+    public class NotImplementedMarkdown : CompositeDrawable
     {
         public NotImplementedMarkdown(IMarkdownObject markdownObject)
         {
-            Colour = new Color4(255, 0, 0, 255);
-            TextSize = 21;
-            Text = markdownObject?.GetType() + " Not implemented.";
+            AutoSizeAxes = Axes.Y;
+            InternalChildren = new SpriteText
+            {
+                Colour = new Color4(255, 0, 0, 255),
+                TextSize = 21,
+                Text = markdownObject?.GetType() + " Not implemented."
+            };
         }
     }
 
     /// <summary>
-    /// MarkdownTable : 
-    /// |Operator            | Description
-    /// |--------------------|------------
-    /// | `<left/> + <right/>` | add left to right number 
-    /// | `<left/> - <right/>` | substract right number from left
-    /// | `<left/> * <right/>` | multiply left by right number
-    /// | `<left/> / <right/>` | divide left by right number
-    /// | `<left/> // <right/>`| divide left by right number and round to an integer
-    /// | `<left/> % <right/>` | calculates the modulus of left by right
+    /// Visualises a markdown table, containing <see cref="MarkdownTableCell"/>s.
     /// </summary>
-    public class MarkdownTable : Container
+    public class MarkdownTable : CompositeDrawable
     {
         private readonly MarkdownTableContainer tableContainer;
         private readonly List<List<MarkdownTableCell>> listContainerArray = new List<List<MarkdownTableCell>>();
@@ -394,14 +389,11 @@ namespace osu.Framework.Markdown.Tests.Visual
                 listContainerArray.Add(rows);
             }
 
-            Children = new Drawable[]
+            InternalChild = tableContainer = new MarkdownTableContainer
             {
-                tableContainer = new MarkdownTableContainer
-                {
-                    AutoSizeAxes = Axes.Y,
-                    RelativeSizeAxes = Axes.X,
-                    Content = listContainerArray.Select(x=>x.Select(y=>(Drawable)y).ToArray()).ToArray(),
-                }
+                AutoSizeAxes = Axes.Y,
+                RelativeSizeAxes = Axes.X,
+                Content = listContainerArray.Select(x => x.Select(y => (Drawable)y).ToArray()).ToArray(),
             };
         }
 
@@ -411,13 +403,13 @@ namespace osu.Framework.Markdown.Tests.Visual
             if (lastDrawSize != DrawSize)
             {
                 lastDrawSize = DrawSize;
-                UpdateColumnDefinitions();
-                UpdateRowDefinitions();
+                updateColumnDefinitions();
+                updateRowDefinitions();
             }
             base.Update();
         }
 
-        protected virtual void UpdateColumnDefinitions()
+        private void updateColumnDefinitions()
         {
             var totalColumn = listContainerArray.Max(x => x.Count);
             var totalRows = listContainerArray.Count;
@@ -461,7 +453,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
             tableContainer.ColumnDimensions = columnDimensions;
         }
-        protected virtual void UpdateRowDefinitions()
+
+        private void updateRowDefinitions()
         {
             tableContainer.RowDimensions = listContainerArray.Select(x => new Dimension(GridSizeMode.Absolute, x.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
         }
@@ -475,7 +468,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
 
-        public class MarkdownTableCell : Container
+        public class MarkdownTableCell : CompositeDrawable
         {
             public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
             private readonly MarkdownTextFlowContainer textFlowContainer;
@@ -483,7 +476,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
                 new MarkdownTextFlowContainer
                 {
-                    Margin = new MarginPadding { Left = 5, Right = 5, Top = 5, Bottom = 5 }
+                    Padding = new MarginPadding { Left = 5, Right = 5, Top = 5, Bottom = 0 }
                 };
 
             public MarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
@@ -501,7 +494,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                     backgroundAlpha = 0.4f;
                 }
 
-                Children = new Drawable[]
+                InternalChildren = new Drawable[]
                 {
                     new Box
                     {
@@ -525,8 +518,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                         break;
 
                     case TableColumnAlign.Right:
-                        //TODO : make this work
-                        //textFlowContainer.TextAnchor = Anchor.TopRight;
+                        textFlowContainer.TextAnchor = Anchor.TopRight;
                         break;
 
                     default:
@@ -543,7 +535,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// foo
     /// ```
     /// </summary>
-    public class MarkdownFencedCodeBlock : Container
+    public class MarkdownFencedCodeBlock : CompositeDrawable
     {
         public MarkdownFencedCodeBlock(FencedCodeBlock fencedCodeBlock)
         {
@@ -551,7 +543,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             RelativeSizeAxes = Axes.X;
 
             TextFlowContainer textFlowContainer;
-            Children = new Drawable[]
+            InternalChildren = new Drawable[]
             {
                 new Box
                 {
@@ -583,7 +575,7 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// ###Heading3
     /// ###3Heading4
     /// </summary>
-    public class MarkdownHeading : Container
+    public class MarkdownHeading : CompositeDrawable
     {
         protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
             new MarkdownTextFlowContainer();
@@ -595,7 +587,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             MarkdownTextFlowContainer textFlowContainer;
 
-            Children = new Drawable[]
+            InternalChildren = new Drawable[]
             {
                 textFlowContainer = CreateMarkdownTextFlowContainer()
             };
@@ -628,10 +620,10 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// MarkdownQuoteBlock :
     /// > NOTE: This document does not describe the `liquid` language.
     /// </summary>
-    public class MarkdownQuoteBlock : Container
+    public class MarkdownQuoteBlock : CompositeDrawable
     {
         protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
-            new MarkdownTextFlowContainer()
+            new MarkdownTextFlowContainer
             {
                 Margin = new MarginPadding { Left = 20 }
             };
@@ -643,7 +635,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             MarkdownTextFlowContainer textFlowContainer;
 
-            Children = new Drawable[]
+            InternalChildren = new Drawable[]
             {
                 new Box
                 {
@@ -665,25 +657,29 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// MarkdownSeperator :
     /// (spacing)
     /// </summary>
-    public class MarkdownSeperator : Box
+    public class MarkdownSeperator : CompositeDrawable
     {
         public MarkdownSeperator()
         {
-            RelativeSizeAxes = Axes.X;
             Height = 1;
-            Colour = Color4.Gray;
+            RelativeSizeAxes = Axes.X;
+            InternalChild = new Box();
+            {
+                RelativeSizeAxes = Axes.X;
+                Colour = Color4.Gray;
+            }
         }
     }
 
     /// <summary>
     /// Load image from url
     /// </summary>
-    public class MarkdownImage : Container
+    public class MarkdownImage : CompositeDrawable
     {
         private readonly Box background;
         public MarkdownImage(string url)
         {
-            Children = new Drawable[]
+            InternalChildren = new Drawable[]
             {
                 background = new Box
                 {
@@ -708,15 +704,15 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             var rowImageSize = imageContainer.Image?.Texture?.Size ?? new Vector2();
             //Resize to image's row size
-            this.ResizeWidthTo(rowImageSize.X,700,Easing.OutQuint);
-            this.ResizeHeightTo(rowImageSize.Y,700,Easing.OutQuint);
+            this.ResizeWidthTo(rowImageSize.X, 700, Easing.OutQuint);
+            this.ResizeHeightTo(rowImageSize.Y, 700, Easing.OutQuint);
 
             //Hide background image
-            background.FadeTo(0,300,Easing.OutQuint);
+            background.FadeTo(0, 300, Easing.OutQuint);
             imageContainer.FadeInFromZero(300, Easing.OutQuint);
         }
 
-        protected class ImageContainer : Container
+        protected class ImageContainer : CompositeDrawable
         {
             private readonly string imageUrl;
             private readonly Sprite image;
@@ -726,7 +722,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             public ImageContainer(string url)
             {
                 imageUrl = url;
-                Children = new Drawable[]
+                InternalChildren = new Drawable[]
                 {
                     image = new Sprite
                     {
@@ -808,29 +804,29 @@ namespace osu.Framework.Markdown.Tests.Visual
                         AddText(text, t => t.Colour = Color4.MediumPurple);
                     else if (lnline.GetNext(literalInline) is HtmlEntityInline)
                         AddText(text, t => t.Colour = Color4.GreenYellow);
-                    else if(literalInline.Parent is EmphasisInline emphasisInline)
+                    else if (literalInline.Parent is EmphasisInline emphasisInline)
                     {
-                        if(emphasisInline.IsDouble)
+                        if (emphasisInline.IsDouble)
                         {
-                            switch(emphasisInline.DelimiterChar)
+                            switch (emphasisInline.DelimiterChar)
                             {
                                 case '*':
-                                    AddBoldText(text,literalInline);
-                                break;
-                                default : 
-                                    AddDefalutLiteralInlineText(text,literalInline);
-                                break;
+                                    AddBoldText(text, literalInline);
+                                    break;
+                                default:
+                                    AddDefalutLiteralInlineText(text, literalInline);
+                                    break;
                             }
                         }
                         else
                         {
-                            AddDefalutLiteralInlineText(text,literalInline);
-                        }   
+                            AddDefalutLiteralInlineText(text, literalInline);
+                        }
                     }
                     else if (literalInline.Parent is LinkInline linkInline)
                     {
                         if (!linkInline.IsImage)
-                            AddLinkText(text,literalInline);
+                            AddLinkText(text, literalInline);
                     }
                     else
                         AddText(text);
@@ -866,39 +862,39 @@ namespace osu.Framework.Markdown.Tests.Visual
             return this;
         }
 
-        protected virtual void AddBoldText(string text,LiteralInline literalInline)
+        protected virtual void AddBoldText(string text, LiteralInline literalInline)
         {
             //TODO : make real "Bold text"
-            AddDrawanle(new SpriteText
-                            {
-                                Text = text,
-                                Colour = Color4.LightGray
-                            }.WithEffect(new GlowEffect
-                            {
-                                BlurSigma = new Vector2(1f),
-                                Strength = 2f,
-                                Colour = ColourInfo.GradientHorizontal(new Color4(1.2f, 1.2f, 1.2f, 1f), new Color4(1.2f, 1.2f, 1.2f, 1f)),
-                            }));
+            AddDrawable(new SpriteText
+            {
+                Text = text,
+                Colour = Color4.LightGray
+            }.WithEffect(new GlowEffect
+            {
+                BlurSigma = new Vector2(1f),
+                Strength = 2f,
+                Colour = ColourInfo.GradientHorizontal(new Color4(1.2f, 1.2f, 1.2f, 1f), new Color4(1.2f, 1.2f, 1.2f, 1f)),
+            }));
         }
 
-        protected virtual void AddLinkText(string text,LiteralInline literalInline)
+        protected virtual void AddLinkText(string text, LiteralInline literalInline)
         {
-            var linkText = (literalInline.Parent as LinkInline)?.Url;
             //TODO Add Link Text
+            //var linkText = (literalInline.Parent as LinkInline)?.Url;
             AddText(text, t => t.Colour = Color4.DodgerBlue);
         }
 
-        protected virtual void AddDefalutLiteralInlineText(string text,LiteralInline literalInline)
+        protected virtual void AddDefalutLiteralInlineText(string text, LiteralInline literalInline)
         {
             AddText(text);
         }
 
         protected virtual void AddCodeInLineText(CodeInline codeInline)
         {
-             AddText(codeInline.Content, t =>
-             {
-                 t.Colour = Color4.Orange;
-             });
+            AddText(codeInline.Content, t =>
+            {
+                t.Colour = Color4.Orange;
+            });
         }
 
         protected virtual void AddImage(LinkInline linkInline)
@@ -912,7 +908,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             });
         }
 
-        protected IEnumerable<SpriteText> AddDrawanle(Drawable drawable)
+        protected IEnumerable<SpriteText> AddDrawable(Drawable drawable)
         {
             var imageIndex = AddPlaceholder(drawable);
             return base.AddText("[" + imageIndex + "]");
