@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -400,6 +401,7 @@ namespace osu.Framework.Markdown.Tests.Visual
         protected virtual MarkdownTableCell CreateMarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber) =>
             new MarkdownTableCell(cell, definition, rowNumber);
 
+        
         private Vector2 lastDrawSize;
         protected override void Update()
         {
@@ -411,9 +413,26 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
             base.Update();
         }
+        
+
+        /*
+        public override bool Invalidate(Invalidation invalidation = Invalidation.All, Drawable source = null, bool shallPropagate = true)
+        {
+            if ((invalidation & (Invalidation.DrawSize | Invalidation.RequiredParentSizeToFit)) > 0)
+            {
+                updateColumnDefinitions();
+                updateRowDefinitions();
+            }
+
+            return base.Invalidate(invalidation, source, shallPropagate);
+        }
+        */
 
         private void updateColumnDefinitions()
         {
+            if(!listContainerArray.Any())
+                return;
+
             var totalColumn = listContainerArray.Max(x => x.Count);
             var totalRows = listContainerArray.Count;
 
@@ -459,7 +478,11 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         private void updateRowDefinitions()
         {
-            tableContainer.RowDimensions = listContainerArray.Select(x => new Dimension(GridSizeMode.Absolute, x.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
+            if (!listContainerArray.Any())
+                return;
+
+            tableContainer.RowDimensions = listContainerArray
+                .Select(x => new Dimension(GridSizeMode.Absolute, x.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
         }
 
         private class MarkdownTableContainer : GridContainer
