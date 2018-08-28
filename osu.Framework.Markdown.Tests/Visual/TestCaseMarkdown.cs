@@ -349,7 +349,12 @@ namespace osu.Framework.Markdown.Tests.Visual
         public NotImplementedMarkdown(IMarkdownObject markdownObject)
         {
             AutoSizeAxes = Axes.Y;
-            InternalChildren = new SpriteText
+            InternalChild = CreateNotImplementDrawable(markdownObject);
+        }
+
+        protected virtual Drawable CreateNotImplementDrawable(IMarkdownObject markdownObject)
+        {
+            return new SpriteText
             {
                 Colour = new Color4(255, 0, 0, 255),
                 TextSize = 21,
@@ -571,18 +576,8 @@ namespace osu.Framework.Markdown.Tests.Visual
             TextFlowContainer textFlowContainer;
             InternalChildren = new Drawable[]
             {
-                new Box
-                {
-                    RelativeSizeAxes = Axes.Both,
-                    Colour = Color4.Gray,
-                    Alpha = 0.5f
-                },
-                textFlowContainer = new TextFlowContainer
-                {
-                    RelativeSizeAxes = Axes.X,
-                    AutoSizeAxes = Axes.Y,
-                    Margin = new MarginPadding { Left = 10, Right = 10, Top = 10, Bottom = 10 }
-                }
+                CreateBackground(),
+                textFlowContainer = CreateTextArea(),
             };
 
             var lines = fencedCodeBlock.Lines.Lines.Take(fencedCodeBlock.Lines.Count);
@@ -591,6 +586,26 @@ namespace osu.Framework.Markdown.Tests.Visual
                 var lineString = sligneLine.ToString();
                 textFlowContainer.AddParagraph(lineString);
             }
+        }
+
+        protected virtual Drawable CreateBackground()
+        {
+            return new Box
+            {
+                RelativeSizeAxes = Axes.Both,
+                Colour = Color4.Gray,
+                Alpha = 0.5f
+            };
+        }
+
+        protected virtual TextFlowContainer CreateTextArea()
+        {
+            return new TextFlowContainer
+            {
+                RelativeSizeAxes = Axes.X,
+                AutoSizeAxes = Axes.Y,
+                Margin = new MarginPadding { Left = 10, Right = 10, Top = 10, Bottom = 10 }
+            };
         }
     }
 
@@ -603,9 +618,6 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownHeading : CompositeDrawable
     {
-        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
-            new MarkdownTextFlowContainer();
-
         public MarkdownHeading(HeadingBlock headingBlock)
         {
             AutoSizeAxes = Axes.Y;
@@ -619,26 +631,28 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
 
             var level = headingBlock.Level;
-            Vector2 scale = new Vector2(1);
+            textFlowContainer.Scale = new Vector2(GetFontSizeByLevel(level));
+            textFlowContainer.AddInlineText(headingBlock.Inline);
+        }
 
+        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
+            new MarkdownTextFlowContainer();
+
+        protected float GetFontSizeByLevel(int level)
+        {
             switch (level)
             {
                 case 1:
-                    scale = new Vector2(2.7f);
-                    break;
+                    return 2.7f;
                 case 2:
-                    scale = new Vector2(2);
-                    break;
+                    return 2;
                 case 3:
-                    scale = new Vector2(1.5f);
-                    break;
+                    return 1.5f;
                 case 4:
-                    scale = new Vector2(1.3f);
-                    break;
+                    return 1.3f;
+                default:
+                    return 1;
             }
-
-            textFlowContainer.Scale = scale;
-            textFlowContainer.AddInlineText(headingBlock.Inline);
         }
     }
 
@@ -657,14 +671,7 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             InternalChildren = new Drawable[]
             {
-                new Box
-                {
-                    Colour = Color4.Gray,
-                    Width = 5,
-                    Anchor = Anchor.CentreLeft,
-                    Origin = Anchor.CentreLeft,
-                    RelativeSizeAxes = Axes.Y
-                },
+                CreateBackground(),
                 textFlowContainer = CreateMarkdownTextFlowContainer()
             };
 
@@ -672,11 +679,25 @@ namespace osu.Framework.Markdown.Tests.Visual
                 textFlowContainer.ParagraphBlock = paragraphBlock;
         }
 
-        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
-            new MarkdownTextFlowContainer
+        protected virtual Drawable CreateBackground()
+        {
+            return new Box
+            {
+                Colour = Color4.Gray,
+                Width = 5,
+                Anchor = Anchor.CentreLeft,
+                Origin = Anchor.CentreLeft,
+                RelativeSizeAxes = Axes.Y
+            };
+        }
+
+        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer()
+        {
+            return new MarkdownTextFlowContainer
             {
                 Margin = new MarginPadding { Left = 20 }
             };
+        }
     }
 
     /// <summary>
@@ -689,7 +710,12 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
-            InternalChild = new Box
+            InternalChild = CreateSeperator();
+        }
+
+        protected virtual Drawable CreateSeperator()
+        {
+            return new Box
             {
                 RelativeSizeAxes = Axes.X,
                 Colour = Color4.Gray,
