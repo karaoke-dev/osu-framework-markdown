@@ -403,10 +403,6 @@ namespace osu.Framework.Markdown.Tests.Visual
             };
         }
 
-        protected virtual MarkdownTableCell CreateMarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber) =>
-            new MarkdownTableCell(cell, definition, rowNumber);
-
-        
         private Vector2 lastDrawSize;
         protected override void Update()
         {
@@ -418,26 +414,9 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
             base.Update();
         }
-        
-
-        /*
-        public override bool Invalidate(Invalidation invalidation = Invalidation.All, Drawable source = null, bool shallPropagate = true)
-        {
-            if ((invalidation & (Invalidation.DrawSize | Invalidation.RequiredParentSizeToFit)) > 0)
-            {
-                updateColumnDefinitions();
-                updateRowDefinitions();
-            }
-
-            return base.Invalidate(invalidation, source, shallPropagate);
-        }
-        */
 
         private void updateColumnDefinitions()
         {
-            if(!listContainerArray.Any())
-                return;
-
             var totalColumn = listContainerArray.Max(x => x.Count);
             var totalRows = listContainerArray.Count;
 
@@ -483,11 +462,12 @@ namespace osu.Framework.Markdown.Tests.Visual
 
         private void updateRowDefinitions()
         {
-            if (!listContainerArray.Any())
-                return;
+            tableContainer.RowDimensions = listContainerArray.Select(x => new Dimension(GridSizeMode.Absolute, x.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
+        }
 
-            tableContainer.RowDimensions = listContainerArray
-                .Select(x => new Dimension(GridSizeMode.Absolute, x.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
+        protected virtual MarkdownTableCell CreateMarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
+        {
+            return new MarkdownTableCell(cell, definition, rowNumber);
         }
 
         private class MarkdownTableContainer : GridContainer
@@ -498,65 +478,72 @@ namespace osu.Framework.Markdown.Tests.Visual
                 set => base.AutoSizeAxes = value;
             }
         }
+    }
 
-        public class MarkdownTableCell : CompositeDrawable
+    public class MarkdownTableCell : CompositeDrawable
+    {
+        public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
+        private readonly MarkdownTextFlowContainer textFlowContainer;
+
+        public MarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
         {
-            public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
-            private readonly MarkdownTextFlowContainer textFlowContainer;
+            RelativeSizeAxes = Axes.Both;
+            BorderThickness = 1.8f;
+            BorderColour = Color4.White;
+            Masking = true;
 
-            protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer() =>
-                new MarkdownTextFlowContainer
-                {
-                    Padding = new MarginPadding { Left = 5, Right = 5, Top = 5, Bottom = 0 }
-                };
-
-            public MarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
+            InternalChildren = new[]
             {
-                RelativeSizeAxes = Axes.Both;
-                BorderThickness = 1.8f;
-                BorderColour = Color4.White;
-                Masking = true;
+                CreateBackground(rowNumber),
+                textFlowContainer = CreateMarkdownTextFlowContainer()
+            };
 
-                var backgroundColor = rowNumber % 2 != 0 ? Color4.White : Color4.LightGray;
-                var backgroundAlpha = 0.3f;
-                if (rowNumber == 0)
-                {
-                    backgroundColor = Color4.White;
-                    backgroundAlpha = 0.4f;
-                }
-
-                InternalChildren = new Drawable[]
-                {
-                    new Box
-                    {
-                        RelativeSizeAxes = Axes.Both,
-                        Colour = backgroundColor,
-                        Alpha = backgroundAlpha
-                    },
-                    textFlowContainer = CreateMarkdownTextFlowContainer()
-                };
-
-                foreach (var block in cell)
-                {
-                    var single = (ParagraphBlock)block;
-                    textFlowContainer.ParagraphBlock = single;
-                }
-
-                switch (definition.Alignment)
-                {
-                    case TableColumnAlign.Center:
-                        textFlowContainer.TextAnchor = Anchor.TopCentre;
-                        break;
-
-                    case TableColumnAlign.Right:
-                        textFlowContainer.TextAnchor = Anchor.TopRight;
-                        break;
-
-                    default:
-                        textFlowContainer.TextAnchor = Anchor.TopLeft;
-                        break;
-                }
+            foreach (var block in cell)
+            {
+                var single = (ParagraphBlock)block;
+                textFlowContainer.ParagraphBlock = single;
             }
+
+            switch (definition.Alignment)
+            {
+                case TableColumnAlign.Center:
+                    textFlowContainer.TextAnchor = Anchor.TopCentre;
+                    break;
+
+                case TableColumnAlign.Right:
+                    textFlowContainer.TextAnchor = Anchor.TopRight;
+                    break;
+
+                default:
+                    textFlowContainer.TextAnchor = Anchor.TopLeft;
+                    break;
+            }
+        }
+
+        protected virtual Drawable CreateBackground(int rowNumber)
+        {
+            var backgroundColor = rowNumber % 2 != 0 ? Color4.White : Color4.LightGray;
+            var backgroundAlpha = 0.3f;
+            if (rowNumber == 0)
+            {
+                backgroundColor = Color4.White;
+                backgroundAlpha = 0.4f;
+            }
+
+            return new Box
+            {
+                RelativeSizeAxes = Axes.Both,
+                Colour = backgroundColor,
+                Alpha = backgroundAlpha
+            };
+        }
+
+        protected virtual MarkdownTextFlowContainer CreateMarkdownTextFlowContainer()
+        {
+            return new MarkdownTextFlowContainer
+            {
+                Padding = new MarginPadding { Left = 5, Right = 5, Top = 5, Bottom = 0 }
+            };
         }
     }
 
@@ -729,27 +716,20 @@ namespace osu.Framework.Markdown.Tests.Visual
     /// </summary>
     public class MarkdownImage : CompositeDrawable
     {
-        private readonly Box background;
+        private readonly Drawable background;
         public MarkdownImage(string url)
         {
-            InternalChildren = new Drawable[]
+            ImageContainer imageContainer;
+            InternalChildren = new[]
             {
-                background = new Box
-                {
-                    RelativeSizeAxes = Axes.Both,
-                    Colour = Color4.LightGray,
-                    Alpha = 0.3f
-                },
-                new DelayedLoadWrapper(
-                    new ImageContainer(url)
-                    {
-                        RelativeSizeAxes = Axes.Both,
-                        OnLoadComplete = d =>
-                        {
-                            if(d is ImageContainer imageContainer)
-                                EffectLoadImageComplete(imageContainer);
-                        },
-                    })
+                background = CreateBackground(),
+                new DelayedLoadWrapper(imageContainer = CreateImageContainer(url))
+            };
+
+            imageContainer.OnLoadComplete = d =>
+            {
+                if (d is ImageContainer)
+                    EffectLoadImageComplete(imageContainer);
             };
         }
 
@@ -763,6 +743,24 @@ namespace osu.Framework.Markdown.Tests.Visual
             //Hide background image
             background.FadeTo(0, 300, Easing.OutQuint);
             imageContainer.FadeInFromZero(300, Easing.OutQuint);
+        }
+
+        protected virtual Drawable CreateBackground()
+        {
+            return new Box
+            {
+                RelativeSizeAxes = Axes.Both,
+                Colour = Color4.LightGray,
+                Alpha = 0.3f
+            };
+        }
+
+        protected virtual ImageContainer CreateImageContainer(string url)
+        {
+            return new ImageContainer(url)
+            {
+                RelativeSizeAxes = Axes.Both,
+            };
         }
 
         protected class ImageContainer : CompositeDrawable
@@ -794,11 +792,16 @@ namespace osu.Framework.Markdown.Tests.Visual
                 if (!string.IsNullOrEmpty(imageUrl))
                     texture = textures.Get(imageUrl);
 
-                //TODO : get default texture
-                //if (texture == null)
-                //    texture = textures.Get(@"Markdown/default-image");
+                //get default texture
+                if (texture == null)
+                    texture = GetNotFoundTexture(textures);
 
                 image.Texture = texture;
+            }
+
+            protected virtual Texture GetNotFoundTexture(TextureStore textures)
+            {
+                return null;
             }
         }
     }
