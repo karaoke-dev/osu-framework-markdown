@@ -389,7 +389,7 @@ namespace osu.Framework.Markdown.Tests.Visual
                         var columnDimensions = table.ColumnDefinitions[columnIndex];
                         var tableCell = (TableCell)tableRow[columnIndex];
                         if (tableCell != null)
-                            rows.Add(CreateMarkdownTableCell(tableCell, columnDimensions, listContainerArray.Count));
+                            rows.Add(CreateMarkdownTableCell(tableCell, columnDimensions, listContainerArray.Count, columnIndex));
                     }
 
                 listContainerArray.Add(rows);
@@ -426,7 +426,7 @@ namespace osu.Framework.Markdown.Tests.Visual
             {
                 for (int column = 0; column < totalColumn; column++)
                 {
-                    var colimnTextTotalWidth = listContainerArray[row][column].TextFlowContainer.TotalTextWidth();
+                    var colimnTextTotalWidth = listContainerArray[row][column].TextFlowContainer.TotalTextWidth;
 
                     //get max width
                     listcolumnMaxWidth[column] = Math.Max(listcolumnMaxWidth[column], colimnTextTotalWidth);
@@ -465,16 +465,15 @@ namespace osu.Framework.Markdown.Tests.Visual
             tableContainer.RowDimensions = listContainerArray.Select(x => new Dimension(GridSizeMode.Absolute, x.Max(y => y.TextFlowContainer.DrawHeight + 10))).ToArray();
         }
 
-        protected virtual MarkdownTableCell CreateMarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
+        protected virtual MarkdownTableCell CreateMarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber, int columnNumber)
         {
-            return new MarkdownTableCell(cell, definition, rowNumber);
+            return new MarkdownTableCell(cell, definition, rowNumber, columnNumber);
         }
 
         private class MarkdownTableContainer : GridContainer
         {
             public new Axes AutoSizeAxes
             {
-                get => base.AutoSizeAxes;
                 set => base.AutoSizeAxes = value;
             }
         }
@@ -482,10 +481,9 @@ namespace osu.Framework.Markdown.Tests.Visual
 
     public class MarkdownTableCell : CompositeDrawable
     {
-        public MarkdownTextFlowContainer TextFlowContainer => textFlowContainer;
-        private readonly MarkdownTextFlowContainer textFlowContainer;
+        public readonly MarkdownTextFlowContainer TextFlowContainer;
 
-        public MarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber)
+        public MarkdownTableCell(TableCell cell, TableColumnDefinition definition, int rowNumber, int columnNumber)
         {
             RelativeSizeAxes = Axes.Both;
             BorderThickness = 1.8f;
@@ -494,33 +492,33 @@ namespace osu.Framework.Markdown.Tests.Visual
 
             InternalChildren = new[]
             {
-                CreateBackground(rowNumber),
-                textFlowContainer = CreateMarkdownTextFlowContainer()
+                CreateBackground(rowNumber,columnNumber),
+                TextFlowContainer = CreateMarkdownTextFlowContainer()
             };
 
             foreach (var block in cell)
             {
                 var single = (ParagraphBlock)block;
-                textFlowContainer.ParagraphBlock = single;
+                TextFlowContainer.ParagraphBlock = single;
             }
 
             switch (definition.Alignment)
             {
                 case TableColumnAlign.Center:
-                    textFlowContainer.TextAnchor = Anchor.TopCentre;
+                    TextFlowContainer.TextAnchor = Anchor.TopCentre;
                     break;
 
                 case TableColumnAlign.Right:
-                    textFlowContainer.TextAnchor = Anchor.TopRight;
+                    TextFlowContainer.TextAnchor = Anchor.TopRight;
                     break;
 
                 default:
-                    textFlowContainer.TextAnchor = Anchor.TopLeft;
+                    TextFlowContainer.TextAnchor = Anchor.TopLeft;
                     break;
             }
         }
 
-        protected virtual Drawable CreateBackground(int rowNumber)
+        protected virtual Drawable CreateBackground(int rowNumber, int columnNumber)
         {
             var backgroundColor = rowNumber % 2 != 0 ? Color4.White : Color4.LightGray;
             var backgroundAlpha = 0.3f;
@@ -824,15 +822,17 @@ namespace osu.Framework.Markdown.Tests.Visual
             }
         }
 
+        public float TotalTextWidth => FlowingChildren.Sum(x => x.BoundingBox.Size.X);
+
         public MarkdownTextFlowContainer()
         {
             RelativeSizeAxes = Axes.X;
             AutoSizeAxes = Axes.Y;
         }
 
-        public IEnumerable<SpriteText> AddImage(MarkdownImage image)
+        protected IEnumerable<SpriteText> AddDrawable(Drawable drawable)
         {
-            var imageIndex = AddPlaceholder(image);
+            var imageIndex = AddPlaceholder(drawable);
             return base.AddText("[" + imageIndex + "]");
         }
 
@@ -855,11 +855,16 @@ namespace osu.Framework.Markdown.Tests.Visual
                 if (single is LiteralInline literalInline)
                 {
                     var text = literalInline.Content.ToString();
+
                     if (lnline.GetNext(literalInline) is HtmlInline
                         && lnline.GetPrevious(literalInline) is HtmlInline)
-                        AddText(text, t => t.Colour = Color4.MediumPurple);
+                    {
+                        AddHtmlInLineText(text, literalInline);
+                    }
                     else if (lnline.GetNext(literalInline) is HtmlEntityInline)
-                        AddText(text, t => t.Colour = Color4.GreenYellow);
+                    {
+                        AddHtmlEntityInlineText(text, literalInline);
+                    }
                     else if (literalInline.Parent is EmphasisInline emphasisInline)
                     {
                         if (emphasisInline.IsDouble)
@@ -885,7 +890,9 @@ namespace osu.Framework.Markdown.Tests.Visual
                             AddLinkText(text, literalInline);
                     }
                     else
-                        AddText(text);
+                    {
+                        AddDefalutLiteralInlineText(text, literalInline);
+                    }
                 }
                 else if (single is CodeInline codeInline)
                 {
@@ -908,14 +915,25 @@ namespace osu.Framework.Markdown.Tests.Visual
                 }
                 else
                 {
-                    AddText(single.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
+                    AddNotImpiementedInlineText(single);
                 }
 
                 //generate child
-                if (single is ContainerInline containerInline) AddInlineText(containerInline);
+                if (single is ContainerInline containerInline)
+                    AddInlineText(containerInline);
             }
 
             return this;
+        }
+
+        protected virtual void AddHtmlInLineText(string text, LiteralInline literalInline)
+        {
+            AddText(text, t => t.Colour = Color4.MediumPurple);
+        }
+
+        protected virtual void AddHtmlEntityInlineText(string text, LiteralInline literalInline)
+        {
+            AddText(text, t => t.Colour = Color4.GreenYellow);
         }
 
         protected virtual void AddBoldText(string text, LiteralInline literalInline)
@@ -957,32 +975,16 @@ namespace osu.Framework.Markdown.Tests.Visual
         {
             var imageUrl = linkInline.Url;
             //insert a image
-            AddImage(new MarkdownImage(imageUrl)
+            AddDrawable(new MarkdownImage(imageUrl)
             {
                 Width = 40,
                 Height = 40,
             });
         }
 
-        protected IEnumerable<SpriteText> AddDrawable(Drawable drawable)
+        protected virtual void AddNotImpiementedInlineText(Inline inline)
         {
-            var imageIndex = AddPlaceholder(drawable);
-            return base.AddText("[" + imageIndex + "]");
-        }
-
-        public bool IsChangeLine()
-        {
-            if (FlowingChildren.Any())
-            {
-                var fortRowX = FlowingChildren.FirstOrDefault()?.BoundingBox.Size.X;
-                return FlowingChildren.Any(x => x.BoundingBox.X != fortRowX);
-            }
-            return true;
-        }
-
-        public float TotalTextWidth()
-        {
-            return FlowingChildren.Sum(x => x.BoundingBox.Size.X);
+            AddText(inline.GetType() + " Not implemented.", t => t.Colour = Color4.Red);
         }
     }
 
