@@ -1,3 +1,3 @@
 # osu-framework-markdown
 Markdown extension for osu!    
-Haven't finish yet    
+Already merged into [osu-framework](https://github.com/ppy/osu-framework)
